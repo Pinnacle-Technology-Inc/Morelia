@@ -1253,24 +1253,11 @@ class MoreliaRuntime:
 
     @staticmethod
     def _csv_fieldnames(device_type: DeviceType, pod: Any) -> list[str]:
-        if device_type is DeviceType.POD8206HR:
-            return ["time", "EEG1", "EEG2", "EEG3/EMG", "TTL1", "TTL2", "TTL3", "TTL4"]
-        if device_type is DeviceType.POD8401HR:
-            channel_names = ("A", "B", "C", "D")
-            mapper = getattr(type(pod), "get_channel_map_for_preamp_device", None)
-            if callable(mapper) and getattr(pod, "preamp", None) is not None:
-                channel_names = tuple(mapper(pod.preamp).values())
-            return [
-                "time",
-                *channel_names,
-                "aEXT0",
-                "aEXT1",
-                "aTTL1",
-                "aTTL2",
-                "aTTL3",
-                "aTTL4",
-            ]
-        raise ValueError(f"unsupported Morelia device type: {device_type.value!r}")
+        from app.output.csv_schema import csv_fieldnames
+
+        if device_type not in (DeviceType.POD8206HR, DeviceType.POD8401HR):
+            raise ValueError(f"unsupported Morelia device type: {device_type.value!r}")
+        return list(csv_fieldnames(device_type, pod))
 
     # -- reports ------------------------------------------------------------
 
@@ -1381,7 +1368,7 @@ class MoreliaRuntime:
                 and packet_count > 0
             )
             all_verified = all_verified and verified
-        if all_verified:
+        if all_verified and (self._manifest.duration_seconds is None or self._arrival_seen.is_set()):
             self._startup_event.set()
 
     def _log_watchdog_status(

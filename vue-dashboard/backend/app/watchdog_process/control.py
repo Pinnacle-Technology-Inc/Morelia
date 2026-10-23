@@ -153,6 +153,9 @@ class _Handler(BaseHTTPRequestHandler):
                 "pid": os.getpid(),
                 "process_started_at": self.server.process_started_at,
                 "hardware_leases": list(self.server.hardware_lease_keys),
+                "recording_state": getattr(self.server.process, "timing_evidence", {}),
+                "stop_intent": getattr(self.server.process, "stop_intent", None),
+                "stop_result": getattr(self.server.process, "stop_result", None),
             },
         )
 
@@ -174,7 +177,7 @@ class _Handler(BaseHTTPRequestHandler):
         elif self.path == "/recover":
             allowed = {"recovery_id", "device_id"}
         else:
-            allowed = {"recovery_id", "command_id", "request_id"}
+            allowed = {"recovery_id", "command_id", "request_id", "stop_reason", "requested_at"}
         if set(payload) - allowed:
             self._send(HTTPStatus.BAD_REQUEST, {"error": "unknown correlation field"})
             return
@@ -270,7 +273,16 @@ class _Handler(BaseHTTPRequestHandler):
             }.items()
             if value is not None
         }
-        self._send(HTTPStatus.ACCEPTED, {"status": "stopping", "recovery_id": recovery_id})
+        accept_stop = getattr(self.server.process, "request_stop", None)
+        result = None
+        if callable(accept_stop):
+            try:
+                result = accept_stop(payload.get("stop_reason", "user_stop"),
+                                     payload.get("requested_at"), command_id)
+            except (ValueError, TypeError):
+                self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid stop context"})
+                return
+        self._send(HTTPStatus.ACCEPTED, {"status": "stopping", "recovery_id": recovery_id, "stop_result": result})
         self.server.request_stop()
 
 
@@ -352,8 +364,12 @@ class WatchdogControlClient:
         recovery_id: str,
         command_id: str | None = None,
         request_id: str | None = None,
+        stop_reason: str = "user_stop",
+        requested_at: str | None = None,
     ) -> dict[str, object]:
-        payload = {"recovery_id": recovery_id}
+        payload = {"recovery_id": recovery_id, "stop_reason": stop_reason}
+        if requested_at is not None:
+            payload["requested_at"] = requested_at
         if command_id:
             payload["command_id"] = command_id
         if request_id:

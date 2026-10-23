@@ -21,6 +21,7 @@ Design notes
 from __future__ import annotations
 
 import json
+import math
 import os
 import secrets
 import subprocess
@@ -39,8 +40,13 @@ import structlog
 from flask import current_app
 
 from app.control.event_poller import DataflowTarget, EventPoller
+from app.control.startup_output import startup_output
 from app.control.watchdog_recovery import RecoveryAction, WatchdogRecoveryCoordinator
-from app.database import transaction
+from app.control.orphan_teardown import (
+    AdministrativeStopEvidence, assess_containment_teardown, assess_orphan_teardown,
+    ownership_teardown_confirmed,
+)
+from app.database import db, transaction
 from app.domain.enums import RuntimeOwnershipState, SessionStatus, WatchdogProcessState
 from app.domain.errors import RuntimeNotTracked, RuntimeStartupFailed, StopProofMissing
 from app.models.runtime_ownership import RuntimeOwnership
@@ -50,7 +56,9 @@ from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
 from app.runtime_child.driver import RuntimePhase
 from app.runtime_host.manifest import MANIFEST_SCHEMA_VERSION, DeviceFlow, Manifest
-from app.runtime_host.watchdog_process_driver import _kill_pid, pid_is_alive
+from app.runtime_host.process_evidence import (
+    ProcessState, probe_process, record_process_identity, terminate_recorded_process,
+)
 from app.services import (
     device_configs,
     manifests,
@@ -60,6 +68,7 @@ from app.services import incidents as runtime_incidents
 from app.services.event_ingest import ingest_report
 from app.watchdog.adapters import ControlPlaneCommandSender
 from app.watchdog.messages import CommandEnvelope, CorrelationEnvelope
+from app.watchdog_process.outbox import WatchdogOutbox, default_outbox_path, read_lifecycle_reports
 
 # ``RUNTIME_HOST_STOP_DRAIN_TIMEOUT_SECONDS`` is the upper bound on how long
 # stop() waits for the child to flush its terminal report before hard-killing
@@ -164,6 +173,114 @@ class HostSupervisor:
 
     # -- public API -----------------------------------------------------------
 
+    def _lifecycle_reports(self, ownership: RuntimeOwnership, *, pending_only=False):
+        references = list((ownership.details or {}).get("predecessor_watchdogs") or [])
+        if ownership.watchdog_id:
+            references.append({"watchdog_id": ownership.watchdog_id,
+                "outbox_path": ownership.watchdog_outbox_path})
+        seen = set()
+        for reference in references:
+            path = reference.get("outbox_path")
+            if not path or path in seen:
+                continue
+            seen.add(path)
+            for report in read_lifecycle_reports(path, pending_only=pending_only):
+                event = report.envelope
+                if event.runtime_id != ownership.runtime_id:
+                    # Adoption rebinds pending rows; the corresponding ownership
+                    # row validates that producer independently.
+                    continue
+                if (event.watchdog_id != reference["watchdog_id"]
+                        or event.dataflow_id != ownership.dataflow_id
+                        or event.manifest_hash != ownership.manifest_hash):
+                    raise ValueError("durable lifecycle producer identity mismatch")
+                yield path, report
+
+    def replay_watchdog_outboxes(self) -> None:
+        """Replay known producers, including exited hosts; commit before marking delivered."""
+        from app.services.event_ingest import ingest_watchdog_report
+        for ownership in self._ownerships.list_all():
+            try:
+                for path, report in self._lifecycle_reports(ownership, pending_only=True):
+                    ingest_watchdog_report(report.envelope.to_dict())
+                    db.session.commit()
+                    with WatchdogOutbox(path) as outbox:
+                        outbox.mark_delivered(report.envelope.report_id)
+            except Exception as exc:
+                db.session.rollback()
+                _log.warning("watchdog lifecycle replay deferred", runtime_id=ownership.runtime_id,
+                    error=type(exc).__name__, message=str(exc))
+        self._deliver_recorded_stop_intents()
+
+    def _deliver_recorded_stop_intents(self) -> None:
+        """Session intent follows replacement; stale teardown evidence never does."""
+        from app.watchdog_process.control import WatchdogControlClient
+        owners = self._ownerships.list_all()
+        intents = {owner.session_id: ((owner.details or {}).get("stop_intent") or
+                   (owner.details or {}).get("pending_stop_request"))
+            for owner in owners if (owner.details or {}).get("stop_intent") or
+            (owner.details or {}).get("pending_stop_request")}
+        for owner in owners:
+            if owner.state == RuntimeOwnershipState.STOPPED:
+                continue
+            intent = intents.get(owner.session_id)
+            if not intent or not owner.watchdog_control_port or not owner.token:
+                continue
+            if owner.watchdog_state == WatchdogProcessState.STOPPED:
+                continue
+            try:
+                client = WatchdogControlClient(port=owner.watchdog_control_port, token=owner.token)
+                evidence = client.probe()
+                if (evidence.get("watchdog_id") != owner.watchdog_id
+                        or evidence.get("dataflow_id") != owner.dataflow_id
+                        or evidence.get("manifest_hash") != owner.manifest_hash
+                        or evidence.get("pid") != owner.watchdog_pid):
+                    continue
+                client.stop_watchdog(recovery_id=str(intent["command_id"]),
+                    command_id=str(intent["command_id"]),
+                    stop_reason=intent["stop_reason"], requested_at=intent["requested_at"])
+            except Exception as exc:
+                _log.warning("session stop intent delivery deferred", runtime_id=owner.runtime_id,
+                    error=type(exc).__name__)
+
+    def _replacement_recording_state(self, session: Session, manifest: Manifest, *, adopting=False):
+        if session.status in (SessionStatus.STOPPING, SessionStatus.COMPLETED):
+            raise RuntimeError("session stop intent forbids acquisition replacement")
+        duration = getattr(manifest, "duration_seconds", None)
+        owners = self._ownerships.list_for_session(session.id)
+        if not owners:
+            return None
+        state = None
+        stop_intent = False
+        for owner in reversed(owners):
+            if owner.manifest_hash != manifest.hash:
+                continue
+            if (owner.details or {}).get("stop_intent"):
+                stop_intent = True
+            if (owner.details or {}).get("pending_stop_request"):
+                stop_intent = True
+            if (owner.details or {}).get("recording_state"):
+                state = dict(owner.details["recording_state"])
+            try:
+                for _, report in self._lifecycle_reports(owner):
+                    event = report.envelope
+                    if event.event_type in ("runtime.stop_requested", "runtime.stop_finished"):
+                        stop_intent = True
+                    elif event.event_type in ("runtime.acquisition_started", "runtime.recording_started", "runtime.recording_progress"):
+                        state = dict(event.payload)
+            except (OSError, ValueError, RuntimeError) as exc:
+                if duration is not None and not adopting:
+                    raise RuntimeError("missing durable timing forbids replacement") from exc
+        if stop_intent:
+            raise RuntimeError("durable session stop intent forbids acquisition replacement")
+        if duration is not None and not adopting:
+            if not state:
+                raise RuntimeError("possibly started timed producer has no timing proof")
+            from app.watchdog_process.process import remaining_recording_seconds
+            if remaining_recording_seconds(state, duration) <= 0:
+                raise RuntimeError("recording deadline forbids acquisition replacement")
+        return state
+
     def spawn(
         self,
         session: Session,
@@ -205,6 +322,10 @@ class HostSupervisor:
             )
 
         manifest = manifest or self._build_manifest(session)
+        startup_timeout = float(current_app.config["RUNTIME_HOST_STARTUP_TIMEOUT_SECONDS"])
+        if not math.isfinite(startup_timeout) or startup_timeout <= 0:
+            raise ValueError("RUNTIME_HOST_STARTUP_TIMEOUT_SECONDS must be finite and positive")
+        recording_state = self._replacement_recording_state(session, manifest, adopting=adopt_watchdog_id is not None)
         runtime_driver = str(current_app.config.get("RUNTIME_DRIVER", "morelia"))
         # Pass the resolved manifest so readiness is selection-aware: only the
         # sink types this session actually selects are dependency-checked, and a
@@ -221,6 +342,11 @@ class HostSupervisor:
             manifest_hash=manifest.hash,
             token=token,
         )
+        watchdog_id = adopt_watchdog_id or uuid4().hex
+        outbox_dir = current_app.config["WATCHDOG_OUTBOX_DIR"]
+        if not adopt_watchdog_id:
+            self._ownerships.set_watchdog(runtime_id, watchdog_id=watchdog_id,
+                outbox_path=str(default_outbox_path(outbox_dir, watchdog_id)))
 
         # Write the manifest to a temp file; child reads it once at startup.
         fd, manifest_path = tempfile.mkstemp(suffix=".json", prefix="ged-manifest-")
@@ -236,6 +362,9 @@ class HostSupervisor:
         )
         ingest_token = current_app.config.get("INGEST_TOKEN") or ""
         ingest_args: list[str] = []
+        ingest_args += ["--outbox-dir", str(outbox_dir), "--watchdog-id", watchdog_id]
+        if recording_state:
+            ingest_args += ["--recording-state", json.dumps(recording_state)]
         if ingest_base:
             # BASE url only — every sender downstream (runtime_host's push,
             # TelemetryClient in the watchdog process) appends
@@ -267,22 +396,47 @@ class HostSupervisor:
         log_fd, log_path = tempfile.mkstemp(suffix=".log", prefix="ged-runtime-")
         log_handle = os.fdopen(log_fd, "w", encoding="utf-8")
 
-        proc = subprocess.Popen(
-            [
-                sys.executable, "-m", "app.runtime_host",
-                "--manifest", manifest_path,
-                "--port", "0",
-                "--token", token,
-                "--runtime-id", runtime_id,
-                "--driver", runtime_driver,
-                *ingest_args,
-                *adopt_args,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=log_handle,
-            text=True,
-        )
+        startup_deadline = time.monotonic() + startup_timeout
+        try:
+            proc = subprocess.Popen(
+                [
+                    sys.executable, "-m", "app.runtime_host",
+                    "--manifest", manifest_path,
+                    "--port", "0",
+                    "--token", token,
+                    "--runtime-id", runtime_id,
+                    "--driver", runtime_driver,
+                    *ingest_args,
+                    *adopt_args,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=log_handle,
+                text=True,
+                env={**os.environ, "DATABASE_URL": str(current_app.config["SQLALCHEMY_DATABASE_URI"])},
+            )
+        except Exception:
+            log_handle.close()
+            with transaction():
+                owner = self._ownerships.get(runtime_id)
+                owner.details = dict(owner.details or {}) | {"host_launch_failed": True}
+                if not adopt_watchdog_id:
+                    owner.watchdog_id = None
+                    owner.state = RuntimeOwnershipState.STOPPED
+                    owner.stopped_at = datetime.now(UTC)
+            raise
         log_handle.close()  # child holds its own fd; this process doesn't write to it
+        # READY may never arrive. Retain the process identity before reading
+        # stdout so a failed startup still has an OS-observable cleanup target.
+        with transaction():
+            db.session.execute(db.update(RuntimeOwnership).where(
+                RuntimeOwnership.runtime_id == runtime_id
+            ).values(pid=RuntimeOwnership.pid))
+            owner = self._ownerships.get(runtime_id)
+            db.session.refresh(owner)
+            if (owner.details or {}).get("host_process_identity_source") != "runtime_host":
+                owner.pid = proc.pid
+                owner.details = {**(owner.details or {}),
+                                 "host_process_identity": record_process_identity(proc.pid)}
         _log.info(
             "runtime host spawned",
             **_log_identity(session, dataflow_id),
@@ -291,42 +445,53 @@ class HostSupervisor:
         )
 
         port: int | None = None
+        ready = False
         startup_error: RuntimeStartupFailed | None = None
         try:
-            for line in proc.stdout:
-                line = line.strip()
-                if line.startswith("ERROR:"):
-                    payload = json.loads(line.split(":", 1)[1])
-                    if isinstance(payload, dict):
-                        sink_id = payload.get("sink_id")
-                        startup_error = RuntimeStartupFailed(
-                            error_type=str(
-                                payload.get("error_type") or "RuntimeStartupError"
-                            )[:120],
-                            message=str(
-                                payload.get("message") or "runtime startup failed"
-                            )[:500],
-                            device_id=payload.get("device_id"),
-                            sink_id=sink_id,
-                            sink_type=_manifest_sink_type(manifest, sink_id),
-                        )
-                    break
-                if line.startswith("PORT:"):
-                    port = int(line.split(":", 1)[1])
-                elif line == "READY":
-                    break
+            with startup_output(proc.stdout, deadline=startup_deadline) as lines:
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith("ERROR:"):
+                        payload = json.loads(line.split(":", 1)[1])
+                        if isinstance(payload, dict):
+                            sink_id = payload.get("sink_id")
+                            startup_error = RuntimeStartupFailed(
+                                error_type=str(
+                                    payload.get("error_type") or "RuntimeStartupError"
+                                )[:120],
+                                message=str(
+                                    payload.get("message") or "runtime startup failed"
+                                )[:500],
+                                device_id=payload.get("device_id"),
+                                sink_id=sink_id,
+                                sink_type=_manifest_sink_type(manifest, sink_id),
+                            )
+                        break
+                    if line.startswith("PORT:"):
+                        port = int(line.split(":", 1)[1])
+                    elif line == "READY":
+                        ready = True
+                    if ready and port is not None:
+                        break
+        except TimeoutError:
+            startup_error = RuntimeStartupFailed(
+                error_type="StartupTimeout",
+                message=(
+                    f"Recording startup did not become ready within {startup_timeout:g} seconds. "
+                    "Cleanup was requested; devices remain reserved until shutdown is confirmed."
+                ),
+            )
+            _log.warning(
+                "runtime host startup timed out", session_id=session.id,
+                dataflow_id=dataflow_id, runtime_id=runtime_id,
+                timeout_seconds=startup_timeout,
+            )
         except Exception:
-            proc.terminate()
-            proc.wait(timeout=current_app.config["RUNTIME_HOST_PROCESS_WAIT_TIMEOUT_SECONDS"])
-            os.unlink(manifest_path)
-            self._ownerships.mark_stopped(runtime_id)
+            self._cleanup_failed_start(session, runtime_id, proc, manifest_path)
             raise
 
-        if port is None:
-            proc.terminate()
-            proc.wait(timeout=current_app.config["RUNTIME_HOST_PROCESS_WAIT_TIMEOUT_SECONDS"])
-            os.unlink(manifest_path)
-            self._ownerships.mark_stopped(runtime_id)
+        if startup_error is not None or not ready or port is None:
+            self._cleanup_failed_start(session, runtime_id, proc, manifest_path)
             if startup_error is not None:
                 runtime_incidents.evaluate_worker_startup_failure(
                     session_id=session.id,
@@ -339,11 +504,12 @@ class HostSupervisor:
                 )
                 raise startup_error
             raise RuntimeError(
-                f"runtime host for dataflow {dataflow_id!r} exited before reporting its port "
+                f"runtime host for dataflow {dataflow_id!r} exited before reporting its port and READY "
                 f"(child log: {log_path})"
             )
 
-        runtime_pid = proc.pid
+        db.session.refresh(owner)
+        runtime_pid = owner.pid or proc.pid
         status: dict = {}
         try:
             status = self._probe_status(port)
@@ -358,6 +524,11 @@ class HostSupervisor:
             )
         if status.get("runtime_id") == runtime_id and isinstance(status.get("pid"), int):
             runtime_pid = status["pid"]
+            with transaction():
+                owner = self._ownerships.get(runtime_id)
+                db.session.refresh(owner)
+                owner.details = {**(owner.details or {}),
+                                 "host_process_identity": record_process_identity(runtime_pid)}
         if adopt_watchdog_id is not None and status:
             if (
                 status.get("watchdog_state") == "adopted"
@@ -369,6 +540,7 @@ class HostSupervisor:
                         watchdog_id=adopt_watchdog_id,
                         pid=status.get("watchdog_pid"),
                         control_port=status.get("watchdog_control_port"),
+                        outbox_path=status.get("watchdog_outbox_path") or str(default_outbox_path(outbox_dir, adopt_watchdog_id)),
                     )
                     _log.info(
                         "spawn: surviving watchdog adopted and persisted",
@@ -459,6 +631,38 @@ class HostSupervisor:
         self._ensure_event_poller_running()
         return port
 
+    def _cleanup_failed_start(self, session, runtime_id, proc, manifest_path) -> None:
+        """Bound host termination and retain ownership until descendant cleanup is proven."""
+        wait_timeout = current_app.config["RUNTIME_HOST_PROCESS_WAIT_TIMEOUT_SECONDS"]
+        try:
+            proc.terminate()
+            proc.wait(timeout=wait_timeout)
+        except (OSError, subprocess.TimeoutExpired):
+            with suppress(OSError, subprocess.TimeoutExpired):
+                proc.kill()
+                proc.wait(timeout=wait_timeout)
+        finally:
+            with suppress(OSError):
+                os.unlink(manifest_path)
+            self._retire_failed_start(session, runtime_id)
+
+    def _retire_failed_start(self, session: Session, runtime_id: str) -> None:
+        owner = self._ownerships.get(runtime_id)
+        if owner is None:
+            return
+        if owner.watchdog_id:
+            try:
+                result = self._stop_starting_watchdog(session, owner, None)
+                from app.services.sessions import apply_shutdown_result
+                apply_shutdown_result(session, result, owner)
+                return
+            except Exception:
+                _log.exception("failed startup producer stop remains uncertain", runtime_id=runtime_id)
+        if owner.watchdog_id:
+            self._ownerships.mark_uncertain(runtime_id, details={"reason": "startup_teardown_unproven"})
+        else:
+            self._ownerships.mark_stopped(runtime_id)
+
     def _get_child(self, dataflow_id: str) -> _ChildEntry:
         try:
             return self._children[dataflow_id]
@@ -487,7 +691,7 @@ class HostSupervisor:
         )
         sender.dispatch(envelope)
 
-    def stop(self, session: Session, *, envelope: CommandEnvelope | None = None) -> None:
+    def stop(self, session: Session, *, envelope: CommandEnvelope | None = None) -> dict | AdministrativeStopEvidence | None:
         """Send stop command, terminate the process, and clear the DB columns.
 
         Raises:
@@ -497,6 +701,17 @@ class HostSupervisor:
         """
         dataflow_id = session.dataflow_id or getattr(session, "_pending_dataflow_id", None)
         self._cancel_recovery_retry(dataflow_id)
+        if dataflow_id not in self._children:
+            owner = self._ownerships.unresolved_for_dataflow(dataflow_id)
+            if owner is None:
+                owners = self._ownerships.list_for_session(session.id)
+                owner = owners[0] if owners and owners[0].dataflow_id == dataflow_id else None
+            if owner is not None:
+                if (owner.details or {}).get("host_launch_failed") is True and not owner.watchdog_id:
+                    raise RuntimeNotTracked(dataflow_id)
+                result = self._stop_starting_watchdog(session, owner, envelope)
+                self._schedule_multi_owner_projection(session)
+                return result
         entry = self._pop_child(dataflow_id)
         self._ownerships.mark_stopping(entry.runtime_id)
 
@@ -530,6 +745,7 @@ class HostSupervisor:
                 ) or session.watchdog_id or "supervisor"
                 stop_envelope = CommandEnvelope(
                     command="stop",
+                    stop_reason="application_shutdown",
                     correlation=CorrelationEnvelope(
                         request_id=uuid4().hex,
                         dataflow_id=dataflow_id,
@@ -539,6 +755,7 @@ class HostSupervisor:
                     ),
                     target_device_id=None,
                 )
+            self._record_stop_intent(session, self._ownerships.get(entry.runtime_id), stop_envelope)
             sender.dispatch(stop_envelope)
         except Exception as exc:
             _log.warning(
@@ -614,25 +831,326 @@ class HostSupervisor:
                     message=str(exc),
                 )
 
+        stop_result = last_status.get("stop_result")
+        ownership = self._ownerships.get(entry.runtime_id)
+        if ownership is not None:
+            try:
+                for _, report in self._lifecycle_reports(ownership):
+                    if (report.envelope.watchdog_id == ownership.watchdog_id
+                            and report.envelope.event_type == "runtime.stop_finished"):
+                        stop_result = dict(report.envelope.payload)
+            except Exception:
+                _log.exception("stop outcome outbox read failed", runtime_id=entry.runtime_id)
         stop_proven = (
             terminal_report_seen
             or durable_terminal_report
             or watchdog_clean_exit
             or host_confirms_terminal
         )
+        if (getattr(session, "duration_seconds", None) is not None or stop_result is not None
+                or (ownership is not None and (ownership.watchdog_id or ownership.watchdog_pid))):
+            stop_proven = bool(stop_result and stop_result.get("teardown_confirmed"))
 
         if not self._children:
             self.stop_event_poller()
 
         if not stop_proven:
+            if ownership is not None:
+                recovered = self._administrative_stop_evidence(session, ownership, terminate_host=True)
+                if recovered is not None:
+                    self._schedule_multi_owner_projection(session)
+                    return recovered
             self._ownerships.mark_uncertain(
                 entry.runtime_id,
                 details={"reason": "stop_proof_missing", "last_status": last_status or None},
             )
+            if ownership is not None:
+                self._retry_teardown(session, ownership)
             raise StopProofMissing(dataflow_id, runtime_id=entry.runtime_id)
 
         self._ownerships.mark_stopped(entry.runtime_id)
         self._sessions.clear_runtime_host_identity(session)
+        self._schedule_multi_owner_projection(session)
+        return stop_result
+
+    def _schedule_multi_owner_projection(self, session):
+        # A successful individual Stop may still leave historical producers to
+        # reconcile. Complete their projection without requiring another click.
+        if len(self._ownerships.list_for_session(session.id)) > 1:
+            self._schedule_recovery_retry(session_id=session.id, dataflow_id=session.dataflow_id,
+                                          delay_seconds=1)
+
+    def _stop_starting_watchdog(self, session, owner, envelope):
+        """Cancel a registered producer while host READY is still pending."""
+        from app.watchdog_process.control import WatchdogControlClient
+        self._record_stop_intent(session, owner, envelope)
+        # Startup can fail and persist teardown before the control socket closes.
+        # Read identity-validated durable evidence before requiring a live peer;
+        # otherwise an already-exited producer leaves Stop stuck indefinitely.
+        try:
+            reports = list(self._lifecycle_reports(owner))
+        except Exception:
+            reports = []
+        for _, report in reports:
+            if (report.envelope.watchdog_id == owner.watchdog_id
+                    and report.envelope.event_type == "runtime.stop_finished"
+                    and report.envelope.payload.get("teardown_confirmed") is True):
+                return dict(report.envelope.payload)
+        recovered = self._administrative_stop_evidence(session, owner)
+        if recovered is not None:
+            return recovered
+        self._ownerships.mark_stopping(owner.runtime_id)
+        if not owner.watchdog_control_port or not owner.token:
+            return self._finish_orphan_stop(session, owner)
+        client = WatchdogControlClient(port=owner.watchdog_control_port, token=owner.token)
+        try:
+            evidence = client.probe()
+        except Exception:
+            return self._finish_orphan_stop(session, owner)
+        if (evidence.get("watchdog_id") != owner.watchdog_id
+                or evidence.get("runtime_id") != owner.runtime_id
+                or evidence.get("manifest_hash") != owner.manifest_hash
+                or evidence.get("dataflow_id") != owner.dataflow_id
+                or evidence.get("pid") != owner.watchdog_pid):
+            self._retry_teardown(session, owner)
+            raise StopProofMissing(owner.dataflow_id, runtime_id=owner.runtime_id)
+        intent = ((owner.details or {}).get("stop_intent") or
+                  (owner.details or {}).get("pending_stop_request") or {}) if session is not None else {}
+        command_id = intent.get("command_id") or (envelope.correlation.command_id if envelope else uuid4().hex)
+        try:
+            client.stop_watchdog(recovery_id=command_id, command_id=command_id,
+                stop_reason=intent.get("stop_reason") or ("user_stop" if envelope else "application_shutdown"),
+                requested_at=intent.get("requested_at"))
+        except Exception:
+            return self._finish_orphan_stop(session, owner)
+        deadline = time.monotonic() + current_app.config["RUNTIME_HOST_STOP_DRAIN_TIMEOUT_SECONDS"]
+        while time.monotonic() < deadline:
+            try:
+                reports = list(self._lifecycle_reports(owner))
+            except Exception:
+                break
+            for _, report in reports:
+                if (report.envelope.watchdog_id == owner.watchdog_id
+                        and report.envelope.event_type == "runtime.stop_finished"):
+                    result = dict(report.envelope.payload)
+                    if result.get("teardown_confirmed"):
+                        return result
+                    # A historical negative receipt does not terminate a fresh
+                    # attempt: a later sequence can carry stronger exit proof.
+            time.sleep(0.1)
+        return self._finish_orphan_stop(session, owner)
+
+    def _record_stop_intent(self, session, owner, envelope=None):
+        """Retain Stop authorization even when every child reporting channel fails."""
+        if owner is None or session is None:
+            return
+        intent = next((value for row in self._ownerships.list_for_session(session.id)
+                       for value in [(row.details or {}).get("pending_stop_request") or
+                                     (row.details or {}).get("stop_intent")]
+                       if value and all(value.get(key) for key in (
+                           "command_id", "requested_at", "stop_reason"))), None)
+        intent = intent or {
+            "command_id": envelope.correlation.command_id if envelope else uuid4().hex,
+            "stop_reason": (envelope.stop_reason if envelope else None) or "application_shutdown",
+            "requested_at": datetime.now(UTC).isoformat(),
+        }
+        with transaction():
+            db.session.refresh(owner)
+            owner.details = {**(owner.details or {}), "pending_stop_request": intent}
+            if owner.state != RuntimeOwnershipState.STOPPED:
+                owner.state = RuntimeOwnershipState.STOPPING
+            if session.status != SessionStatus.COMPLETED:
+                session.status = SessionStatus.STOPPING
+
+    def _finish_orphan_stop(self, session, owner):
+        """Escalate a failed graceful stop to independently observed process cleanup."""
+        recovered = self._administrative_stop_evidence(session, owner, terminate_host=True)
+        if recovered is not None:
+            return recovered
+        self._retry_teardown(session, owner)
+        raise StopProofMissing(owner.dataflow_id, runtime_id=owner.runtime_id)
+
+    def _administrative_stop_evidence(self, session, owner, *, terminate_host=False):
+        """Finish orphan cleanup using OS containment when shutdown reports are missing."""
+        if session is None:
+            return None
+        from app.watchdog_process.hardware_lease import HardwareLeaseSet
+        from app.models.runtime_manifest import RuntimeManifest
+        try:
+            observed_host_pid = owner.pid
+            identity = (owner.details or {}).get("host_process_identity")
+            host = probe_process(observed_host_pid)
+            # A live host could start another watchdog after we enumerate its generations.
+            if (host.state is not ProcessState.DEAD and terminate_host and identity
+                    and identity.get("pid") == observed_host_pid):
+                host = terminate_recorded_process(identity, timeout=current_app.config.get(
+                    "RUNTIME_HOST_PROCESS_WAIT_TIMEOUT_SECONDS", 5.0))
+            if host.state is not ProcessState.DEAD:
+                return None
+            db.session.refresh(owner)
+            if (owner.pid != observed_host_pid
+                    or (owner.details or {}).get("host_process_identity") != identity):
+                return None
+            frozen = db.session.scalar(db.select(RuntimeManifest).where(
+                RuntimeManifest.hash == owner.manifest_hash))
+            manifest = (Manifest.from_dict(frozen.content) if frozen is not None else
+                        self._manifest_for_reconcile(session, owner.dataflow_id))
+            if manifest.hash != owner.manifest_hash:
+                return None
+            try:
+                reports = [r.envelope for _, r in self._lifecycle_reports(owner)
+                           if r.envelope.event_type == "runtime.stop_finished"]
+            except Exception:
+                # A broken report channel must not prevent independent process cleanup.
+                reports = []
+            receipts = {r.watchdog_id: dict(r.payload) for r in reports}
+            # Receipt ingestion may have already archived the original outbox.
+            if owner.watchdog_id not in receipts and owner.watchdog_exit_details:
+                receipts[owner.watchdog_id] = dict(owner.watchdog_exit_details)
+            receipt = receipts.get(owner.watchdog_id)
+            predecessors = (owner.details or {}).get("predecessor_watchdogs") or []
+            intent = receipt or ((owner.details or {}).get("stop_intent") or
+                                 (owner.details or {}).get("pending_stop_request"))
+            if not intent or not all(intent.get(key) for key in (
+                    "command_id", "requested_at", "stop_reason")):
+                intent = next((value for row in self._ownerships.list_for_session(session.id)
+                               for value in [(row.details or {}).get("pending_stop_request") or
+                                             (row.details or {}).get("stop_intent")]
+                               if value and all(value.get(key) for key in (
+                                   "command_id", "requested_at", "stop_reason"))), None)
+            cleanup = self._cleanup_contained_watchdogs(owner, predecessors, receipts) if intent else None
+            generations = cleanup if cleanup and all(
+                item.get("released") is True for item in cleanup.values()) else None
+            legacy_compatible = cleanup is not None and all(
+                item.get("released") is True or item.get("reason") in (
+                    "containment_marker_missing", "unsupported_platform")
+                for item in cleanup.values())
+            watchdog = probe_process(owner.watchdog_pid)
+            legacy_proven = bool(legacy_compatible and receipt and watchdog.state is ProcessState.DEAD and all(
+                (receipts.get(p.get("watchdog_id")) or p.get("exit_details") or {}).get(
+                    "teardown_confirmed") is True for p in predecessors
+                if p.get("watchdog_id") != owner.watchdog_id))
+            if generations is None and not legacy_proven:
+                return None
+            leases = HardwareLeaseSet(manifest, directory=current_app.config.get(
+                "WATCHDOG_HARDWARE_LOCK_DIR", "watchdog-hardware-locks"))
+            with leases:
+                proof = None
+                if generations is not None:
+                    proof = assess_containment_teardown(runtime_id=owner.runtime_id,
+                        watchdog_id=owner.watchdog_id, dataflow_id=owner.dataflow_id,
+                        manifest_hash=owner.manifest_hash, stop_intent=intent,
+                        receipt=receipt, host=host, generations=generations,
+                        expected_watchdogs={owner.watchdog_id, *(p["watchdog_id"] for p in predecessors)},
+                        hardware_leases_free=True)
+                if proof is None and legacy_proven:
+                    proof = assess_orphan_teardown(runtime_id=owner.runtime_id,
+                        watchdog_id=owner.watchdog_id, dataflow_id=owner.dataflow_id,
+                        manifest_hash=owner.manifest_hash, receipt=receipt,
+                        expected_streams=len(manifest.device_flows), host=host, watchdog=watchdog,
+                        hardware_leases_free=True, predecessors_confirmed=True)
+                if proof is not None:
+                    # Keep the physical lease fence through durable projection.
+                    from app.services.sessions import apply_administrative_stop_evidence
+                    apply_administrative_stop_evidence(session, proof, owner)
+                return proof
+        except Exception as exc:
+            _log.warning("administrative teardown evidence unavailable", runtime_id=owner.runtime_id,
+                         error=type(exc).__name__)
+            return None
+
+    def _cleanup_contained_watchdogs(self, owner, predecessors, receipts):
+        """Terminate every enrolled watchdog generation, including its silent writers."""
+        from app.watchdog_process.process_tree import cleanup_owned_process_tree
+        references = [*predecessors, {"watchdog_id": owner.watchdog_id,
+                                      "outbox_path": owner.watchdog_outbox_path}]
+        deadline = time.monotonic() + current_app.config.get("WATCHDOG_PROCESS_REAP_TIMEOUT_SECONDS", 5.0)
+        results = {}
+        for reference in references:
+            watchdog_id = reference.get("watchdog_id")
+            if (not watchdog_id or reference.get("dataflow_id", owner.dataflow_id) != owner.dataflow_id
+                    or reference.get("manifest_hash", owner.manifest_hash) != owner.manifest_hash):
+                return None
+            if watchdog_id in results:
+                continue
+            path = reference.get("outbox_path") or default_outbox_path(
+                current_app.config.get("WATCHDOG_OUTBOX_DIR", "watchdog-outbox"), watchdog_id)
+            result = cleanup_owned_process_tree(path, watchdog_id=watchdog_id,
+                dataflow_id=owner.dataflow_id, manifest_hash=owner.manifest_hash, deadline=deadline)
+            observed = result.to_dict()
+            # Pre-upgrade generations may already have a complete durable exit receipt.
+            previous = receipts.get(watchdog_id) or reference.get("exit_details") or {}
+            if (not result.released and result.reason == "containment_marker_missing"
+                    and watchdog_id != owner.watchdog_id and previous.get("teardown_confirmed") is True):
+                observed = {"released": True, "reason": "durable_predecessor_teardown"}
+            results[watchdog_id] = observed
+        with transaction():
+            db.session.refresh(owner)
+            owner.details = {**(owner.details or {}), "process_tree_cleanup": results}
+        return results
+
+    def _retry_teardown(self, session, owner):
+        """Back off cleanup attempts; the retry budget never releases ownership."""
+        if session is None:
+            return
+        details = dict(owner.details or {})
+        attempt = int((details.get("cleanup_retry") or {}).get("attempt", 0)) + 1
+        delays = current_app.config.get("WATCHDOG_RECOVERY_RETRY_DELAYS_SECONDS", (1, 3, 10))
+        maximum = current_app.config.get("WATCHDOG_RECOVERY_MAX_ATTEMPTS", 0)
+        exhausted = bool(maximum and attempt > maximum)
+        delay = delays[min(attempt - 1, len(delays) - 1)] if delays else 10
+        with transaction():
+            db.session.refresh(owner)
+            db.session.refresh(session)
+            if ((owner.state == RuntimeOwnershipState.STOPPED and ownership_teardown_confirmed(owner))
+                    or session.status == SessionStatus.COMPLETED):
+                return
+            details = dict(owner.details or {})
+            details["cleanup_retry"] = {"attempt": attempt, "exhausted": exhausted,
+                "next_retry_at": None if exhausted else
+                (datetime.now(UTC) + timedelta(seconds=delay)).isoformat()}
+            owner.details = details
+            owner.state = RuntimeOwnershipState.UNCERTAIN
+        if not exhausted:
+            self._schedule_recovery_retry(session_id=session.id, dataflow_id=owner.dataflow_id,
+                                          delay_seconds=delay)
+
+    def reconcile_teardown(self, session, owner):
+        """Retry the accepted shutdown for an unresolved owner, including no-port startup."""
+        from app.services.sessions import (
+            apply_shutdown_result, replay_shutdown_result, stop_managed,
+        )
+        from structlog.contextvars import bound_contextvars
+        if session.dataflow_id != owner.dataflow_id:
+            return None
+        retry_owner = owner
+        try:
+            # stop_managed owns the durable request and terminal projection.
+            with bound_contextvars(request_id=uuid4().hex):
+                stop_managed(session.id, self)
+            owners = self._ownerships.list_for_session(session.id)
+            latest = owners[0] if owners else None
+            if session.status == SessionStatus.STOPPING and latest is not None:
+                # A newer producer can finish before an older generation. Its
+                # positive receipt must not prevent the older owner being
+                # reconciled, including historically misleading STOPPED rows.
+                pending = next((item for item in owners[1:]
+                                if not ownership_teardown_confirmed(item)), None)
+                if pending is not None and pending.runtime_id != owner.runtime_id:
+                    retry_owner = pending
+                    result = self._stop_starting_watchdog(session, pending, None)
+                    apply_shutdown_result(session, result, pending)
+                replay_shutdown_result(session, latest)
+                remaining = next((item for item in self._ownerships.list_for_session(session.id)
+                                  if not ownership_teardown_confirmed(item)), None)
+                if session.status == SessionStatus.STOPPING and remaining is not None:
+                    self._retry_teardown(session, remaining)
+            return self._ownerships.get(owner.runtime_id)
+        except Exception as exc:
+            self._retry_teardown(session, retry_owner)
+            _log.warning("cleanup reconciliation deferred", runtime_id=owner.runtime_id,
+                         error=type(exc).__name__)
+            return None
 
 
     def _drain_terminal_report(self, entry: _ChildEntry) -> tuple[bool, dict]:
@@ -707,8 +1225,10 @@ class HostSupervisor:
         ``RECOVERING`` by a deferred ``_defer_recovery`` retry that never
         reached ``spawn()`` and so never got a ``_children`` entry. Without
         phase 2, those rows outlive shutdown and reappear on the next
-        ``start`` — see ``_stop_orphaned_runtimes``.
+        ``start``. Session completion waits until every producer is proven stopped.
         """
+        from app.services.sessions import apply_shutdown_result, replay_shutdown_result
+
         with self._recovery_timer_lock:
             recovery_timers = list(self._recovery_timers.values())
             self._recovery_timers.clear()
@@ -728,17 +1248,15 @@ class HostSupervisor:
                 )
                 continue
             try:
-                self.stop(session)
-                # A daemon shutdown cleanly stops the host, so its outputs are a
-                # completion boundary too: complete each acquisition and enqueue
-                # any EDF/PVFS merge without waiting for it (packet 29). The
-                # orphan/forced teardown paths below deliberately skip this — an
-                # unclean teardown is NOT a clean completion.
-                self._schedule_session_finalization(
-                    session,
-                    completion_cause=output_finalization.COMPLETION_SHUTDOWN,
-                )
-                self._complete_shutdown_session(session)
+                # Capture the producer before stop changes its state or removes
+                # its child entry. The latest owner need not be this producer.
+                owner = self._ownerships.get(self._children[dataflow_id].runtime_id)
+                with transaction():
+                    session.status = SessionStatus.STOPPING
+                result = self.stop(session)
+                apply_shutdown_result(session, result, owner, stop_reason="application_shutdown")
+                if owner is not None and not ownership_teardown_confirmed(owner):
+                    raise StopProofMissing(dataflow_id, runtime_id=owner.runtime_id if owner else None)
                 stopped.append(dataflow_id)
             except Exception as exc:  # noqa: BLE001 - aggregate teardown failures
                 failed.append(
@@ -768,8 +1286,19 @@ class HostSupervisor:
                 )
                 continue
             try:
-                self._stop_orphaned_runtime(ownership)
-                self._complete_shutdown_session(session)
+                with transaction():
+                    session.status = SessionStatus.STOPPING
+                if ownership.watchdog_id:
+                    # Stop this exact owner; stop(session) could select a
+                    # different unresolved generation of the same dataflow.
+                    result = self._stop_starting_watchdog(session, ownership, None)
+                else:
+                    # Missing identity is not proof of teardown. Keep the row
+                    # unresolved so reconciliation can retry it.
+                    raise StopProofMissing(ownership.dataflow_id, runtime_id=ownership.runtime_id)
+                apply_shutdown_result(session, result, ownership, stop_reason="application_shutdown")
+                if not ownership_teardown_confirmed(ownership):
+                    raise StopProofMissing(ownership.dataflow_id, runtime_id=ownership.runtime_id)
                 stopped.append(ownership.dataflow_id)
             except Exception as exc:  # noqa: BLE001 - aggregate teardown failures
                 failed.append(
@@ -783,6 +1312,22 @@ class HostSupervisor:
         if failed and not force:
             raise RuntimeError(f"runtime host teardown failed: {failed[0]}")
 
+        # A newer producer may finish before an older orphan. Reconsider its
+        # durable proof only after every available producer has been attempted.
+        for dataflow_id in dict.fromkeys(stopped):
+            session = self._sessions.get_by_dataflow_id(dataflow_id)
+            try:
+                owners = self._ownerships.list_for_session(session.id)
+                if owners and session.status != SessionStatus.COMPLETED:
+                    replay_shutdown_result(session, owners[0])
+                if session.status != SessionStatus.COMPLETED:
+                    raise StopProofMissing(dataflow_id)
+            except Exception as exc:
+                stopped = [item for item in stopped if item != dataflow_id]
+                failed.append({"dataflow_id": dataflow_id, "error": type(exc).__name__})
+        if failed and not force:
+            raise RuntimeError(f"runtime host teardown failed: {failed[0]}")
+
         return {
             "running_count": len(dataflow_ids) + len(orphans),
             "stopped_count": len(stopped),
@@ -790,21 +1335,6 @@ class HostSupervisor:
             "failures": failed,
             "forced": force,
         }
-
-    def _stop_orphaned_runtime(self, ownership: RuntimeOwnership) -> None:
-        """Best-effort teardown for a DB row with no ``_children`` entry.
-
-        A deferred recovery (``_defer_recovery``) marks a runtime
-        ``RECOVERING`` without ever calling ``spawn()``, so it never gets a
-        ``_ChildEntry`` — the tracked-child loop above can't see it. Kill
-        whatever PIDs the row remembers (best effort; they're usually already
-        dead by the time this runs) and mark the row stopped so it does not
-        resurrect on the next ``reconcile``.
-        """
-        for pid in (ownership.pid, ownership.watchdog_pid):
-            if pid and pid_is_alive(pid):
-                _kill_pid(pid)
-        self._ownerships.mark_stopped(ownership.runtime_id)
 
     def quiesce(self) -> dict[str, int]:
         """Stop control-plane background activity without touching runtime hosts."""
@@ -870,16 +1400,8 @@ class HostSupervisor:
             session.command_in_flight = False
             session.runtime_port = None
             session.runtime_token = None
-        for config_id in _session_device_config_ids(session):
-            try:
-                device_configs.release(config_id)
-            except Exception as exc:
-                _log.warning(
-                    "shutdown: releasing device config claim failed",
-                    session_id=session.id,
-                    error=type(exc).__name__,
-                    message=str(exc),
-                )
+        from app.services.sessions import _release_session_device_configs
+        _release_session_device_configs(session)
 
     def reconcile(
         self, sessions: list[Session], *, adopt_only: bool = False
@@ -894,9 +1416,20 @@ class HostSupervisor:
 
         Dataflows already tracked in the in-memory registry are skipped.
         """
+        from app.services.reconciliation import teardown_reconciliation_due
         report: dict[str, list] = {"adopted": [], "uncertain": []}
+        self.replay_watchdog_outboxes()
         for session in sessions:
+            if session.status == SessionStatus.COMPLETED:
+                continue
             dataflow_id = session.dataflow_id
+            ownership = self._ownerships.unresolved_for_dataflow(dataflow_id) if dataflow_id else None
+            if ownership is not None and teardown_reconciliation_due(session, ownership):
+                self.reconcile_teardown(session, ownership)
+                if session.status != SessionStatus.COMPLETED:
+                    report["uncertain"].append({"dataflow_id": dataflow_id,
+                        "runtime_id": ownership.runtime_id, "reason": "teardown_unproven"})
+                continue
             if not dataflow_id or dataflow_id in self._children:
                 if dataflow_id:
                     _log.info(
@@ -1012,15 +1545,6 @@ class HostSupervisor:
                         )
                         continue
                     if ownership is not None:
-                        if ownership.state == RuntimeOwnershipState.STOPPING:
-                            self._ownerships.mark_stopped(ownership.runtime_id)
-                            _log.info(
-                                "reconcile: stopping host confirmed dead — marked stopped",
-                                dataflow_id=dataflow_id,
-                                runtime_id=ownership.runtime_id,
-                                port=port,
-                            )
-                            continue
                         self._recover_dead_runtime(
                             session,
                             ownership,
@@ -1091,6 +1615,7 @@ class HostSupervisor:
 
     def poll_targets(self) -> list[DataflowTarget]:
         """Return the live dataflow host ports currently owned by this supervisor."""
+        self.replay_watchdog_outboxes()
         return [
             DataflowTarget(dataflow_id=dataflow_id, port=entry.port)
             for dataflow_id, entry in self._children.items()
@@ -1226,11 +1751,21 @@ class HostSupervisor:
         if ownership is None:
             return
 
+        self._ownerships.retain_predecessors(runtime_id, status.get("predecessor_watchdogs") or [])
+
         reported_id = status.get("watchdog_id")
         reported_state_raw = status.get("watchdog_state")
         exit_details = status.get("watchdog_exit_details")
         respawn_exhausted = bool(status.get("watchdog_respawn_exhausted"))
         active_id = ownership.watchdog_id
+
+        if ownership.state == RuntimeOwnershipState.STOPPED:
+            return
+        if reported_id != active_id and any(
+            item.get("watchdog_id") == reported_id
+            for item in (ownership.details or {}).get("predecessor_watchdogs", [])
+        ):
+            return  # stale status cannot reclaim a retired producer identity
 
         if reported_id is not None and reported_id != active_id:
             self._ownerships.set_watchdog(
@@ -1239,6 +1774,7 @@ class HostSupervisor:
                 token_hash=status.get("watchdog_token_hash"),
                 pid=status.get("watchdog_pid"),
                 control_port=status.get("watchdog_control_port"),
+                outbox_path=status.get("watchdog_outbox_path"),
             )
             return
 
@@ -1281,6 +1817,8 @@ class HostSupervisor:
                 details=status.get("watchdog_exit_details"),
             )
         elif state in (WatchdogProcessState.RUNNING, WatchdogProcessState.ADOPTED):
+            if ownership.watchdog_state in (WatchdogProcessState.STOPPED, WatchdogProcessState.STOPPING):
+                return
             self._ownerships.update_watchdog_seen(
                 runtime_id,
                 watchdog_id=watchdog_id,
@@ -1324,6 +1862,15 @@ class HostSupervisor:
 
         coordinator = self._recovery_manager()
         assessment = coordinator.assess(ownership, manifest)
+        if assessment.action is RecoveryAction.START_FRESH:
+            try:
+                self._replacement_recording_state(session, manifest)
+            except Exception as exc:
+                self._ownerships.mark_uncertain(ownership.runtime_id, details={
+                    "reason": "replacement_timing_or_stop_fence", "error": str(exc),
+                })
+                self._cancel_recovery_retry(ownership.dataflow_id)
+                return
         if assessment.action is RecoveryAction.RETRY:
             self._defer_recovery(
                 session,
@@ -1496,6 +2043,17 @@ class HostSupervisor:
         doesn't have to rediscover it as an orphan.
         """
         self._cancel_recovery_retry(ownership.dataflow_id)
+        if ownership.watchdog_id:
+            # Exhausted retries are not proof that a possibly live process has
+            # stopped or that its sinks drained. Preserve identity and claims.
+            self._ownerships.mark_uncertain(ownership.runtime_id, details={
+                "reason": f"{reason}_retries_exhausted", "attempt": attempt,
+                "evidence": evidence,
+            })
+            with transaction():
+                session.status = SessionStatus.STOPPING
+                session.command_in_flight = False
+            return
         self._ownerships.mark_recovering(
             ownership.runtime_id,
             phase="abandoned",

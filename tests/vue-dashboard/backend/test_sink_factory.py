@@ -69,7 +69,7 @@ def _ctx(**overrides) -> RuntimeContext:
 
 def test_build_sink_csv_builds_deferred_open_managed_sink(tmp_path):
     path = str(tmp_path / "run.csv")
-    sink = build_sink(_csv_config(path, sink_id="pod8206hr:hw1:extra"), object(), _ctx())
+    sink = build_sink(_csv_config(path, sink_id="pod8206hr:hw1:extra"), object(), _ctx(session_id=42))
 
     assert isinstance(sink, ManagedCsvSink)
     assert sink.opened is False  # SINK-21: construction opens nothing
@@ -80,6 +80,7 @@ def test_build_sink_csv_builds_deferred_open_managed_sink(tmp_path):
     assert d["schema_hash"] == "hash-abc"
     assert d["device_id"] == "pod8206hr:hw1"
     assert d["fieldnames"] == _FIELDS
+    assert d["session_id"] == 42
 
 
 def test_build_sink_csv_missing_file_path_raises_valueerror():

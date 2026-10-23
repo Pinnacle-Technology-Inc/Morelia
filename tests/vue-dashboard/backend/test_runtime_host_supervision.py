@@ -241,12 +241,10 @@ class TestSpawnStop:
             # An unproven stop must not be mistaken for a clean one.
             assert "df-sup-1" not in auto_supervisor._children
 
-    def test_stop_after_daemon_restart_still_raises_runtime_not_tracked(
+    def test_stop_after_daemon_restart_retains_unproven_startup(
         self, sup_app, session_id, auto_supervisor
     ):
-        """A dataflow that was never proof-missing (no UNCERTAIN/stop_proof_missing
-        ownership row at all — e.g. a genuine daemon-restart-before-reconcile
-        case) must still raise the plain RuntimeNotTracked, not StopProofMissing."""
+        """A persisted startup without a process identity remains unproven."""
         with sup_app.app_context():
             session = db.session.get(Session, session_id)
             RuntimeOwnershipRepository().create_starting(
@@ -256,11 +254,8 @@ class TestSpawnStop:
                 manifest_hash="hash-clean-restart",
                 token=None,
             )
-            # No child entry was ever registered on this (fresh) supervisor —
-            # simulates a restart that hasn't reconciled yet. Ownership stays
-            # RUNNING (create_starting's default), never UNCERTAIN.
-
-            with pytest.raises(RuntimeNotTracked) as exc_info:
+            # Restart lost the in-memory child; absence of a PID is not proof.
+            with pytest.raises(StopProofMissing) as exc_info:
                 auto_supervisor.stop(session)
             assert exc_info.value.dataflow_id == "df-sup-1"
 
@@ -466,12 +461,23 @@ class _FakeWatchdogProc:
 
     def terminate(self) -> None:
         self.terminated = True
+        self.exit_code = 0
 
     def wait(self, timeout: float | None = None) -> int:
-        return 0
+        # Match Popen: an alive child does not report a successful exit merely
+        # because the supervision thread began waiting for it.
+        import time
+        import subprocess
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while self.exit_code is None:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired("fake-watchdog", timeout)
+            time.sleep(.005)
+        return self.exit_code
 
     def kill(self) -> None:
         self.killed = True
+        self.exit_code = -9
 
 
 def _fake_popen(proc: _FakeWatchdogProc):
@@ -629,6 +635,7 @@ class TestWatchdogProcessDriver:
             def stop_watchdog(self, **_kwargs):
                 stop_requests.append(True)
                 alive.discard(200)
+                proc.exit_code = 0
                 return {"status": "stopping"}
 
         driver = WatchdogProcessDriver(
@@ -871,7 +878,12 @@ class TestStatusExposesRespawnState:
             assert first_status["watchdog_pid"] == 1001
 
             proc1.exit_code = 1  # simulate the crash between two polls
+            import time
+            deadline = time.monotonic() + 2
             second_status = _get_status(host.port)
+            while second_status.get("watchdog_pid") != 1002 and time.monotonic() < deadline:
+                time.sleep(.01)
+                second_status = _get_status(host.port)
 
         assert second_status["watchdog_id"] is not None
         assert second_status["watchdog_id"] != original_watchdog_id
@@ -908,7 +920,12 @@ class TestStatusExposesRespawnState:
         )
         with host:
             proc.exit_code = 1
+            import time
+            deadline = time.monotonic() + 2
             status = _get_status(host.port)
+            while not status.get("watchdog_respawn_exhausted") and time.monotonic() < deadline:
+                time.sleep(.01)
+                status = _get_status(host.port)
 
         assert status["watchdog_id"] is None
         assert status["watchdog_state"] == "crashed"

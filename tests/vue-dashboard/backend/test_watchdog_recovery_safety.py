@@ -64,18 +64,22 @@ def test_recovery_decision_never_fresh_starts_on_ambiguous_evidence(evidence, ex
     assert decide_recovery(evidence) is expected
 
 
-def test_hardware_lease_blocks_a_second_watchdog(tmp_path: Path):
+@pytest.mark.parametrize("second_port", ["COM3", "COM7", "/dev/ttyUSB5"])
+def test_hardware_lease_blocks_a_second_watchdog(tmp_path: Path, second_port):
     first = HardwareLeaseSet(_manifest(), directory=tmp_path)
-    second = HardwareLeaseSet(_manifest(), directory=tmp_path)
+    second = HardwareLeaseSet(_manifest(port=second_port), directory=tmp_path)
 
     first.acquire()
     try:
+        assert len(list(tmp_path.glob("*.lock"))) == 1
         with pytest.raises(HardwareLeaseBusy, match="pod-123"):
             second.acquire()
+        assert len(list(tmp_path.glob("*.lock"))) == 1
     finally:
         first.release()
 
     second.acquire()
+    assert second.keys == (f"pod-123@{second_port}",)
     second.release()
 
 

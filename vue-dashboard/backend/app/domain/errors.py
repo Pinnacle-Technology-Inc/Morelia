@@ -310,9 +310,10 @@ class RuntimeNotTracked(Exception):
 
 
 class StopProofMissing(RuntimeError):
-    """A managed stop tore the process down but found no durable proof of a
-    clean stop. Claims and runtime identity stay untouched and the session
-    stays ACTIVE (retryable); ``--force`` is the only way to resolve it.
+    """Stop was attempted, but acknowledged teardown evidence is incomplete.
+
+    Keep the session STOPPING and retain ownership until reconciled. A force
+    request is not evidence that devices were released or output is complete.
     """
 
     def __init__(self, dataflow_id: str, *, runtime_id: str) -> None:
@@ -320,10 +321,9 @@ class StopProofMissing(RuntimeError):
         self.runtime_id = runtime_id
         self.details = {"dataflow_id": dataflow_id, "runtime_id": runtime_id}
         super().__init__(
-            f"No durable proof of a clean stop for dataflow {dataflow_id!r} "
-            f"(runtime_id={runtime_id!r}): no stopped/closed report, no clean "
-            "watchdog process exit, and no clean runtime host process exit. "
-            "Retry the stop with force=true to complete it and release claims."
+            f"No acknowledged teardown proof for dataflow {dataflow_id!r} "
+            f"(runtime_id={runtime_id!r}). Stop remains in progress; "
+            "ownership is retained until shutdown evidence is reconciled."
         )
 
 

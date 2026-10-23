@@ -1,4 +1,4 @@
-"""Arrival timing uses real HealthSink behavior with a controlled wall clock."""
+"""Session timing starts when HealthSink receives the first real data packet."""
 from datetime import UTC, datetime
 from queue import Queue
 from types import SimpleNamespace

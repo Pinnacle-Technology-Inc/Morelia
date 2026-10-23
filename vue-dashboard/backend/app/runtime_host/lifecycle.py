@@ -127,6 +127,17 @@ class LifecycleSafetyGate:
         envelope = CommandEnvelope.from_dict(raw)
         self._reject_stale_watchdog_target(envelope)
 
+        if envelope.command == "stop":
+            # Cancellation cannot wait for a recovery/start lock. The watchdog
+            # owns the serialized, idempotent shutdown decision.
+            from structlog.contextvars import bound_contextvars
+            def stop_work():
+                with bound_contextvars(stop_reason=envelope.stop_reason or "user_stop",
+                                       command_id=envelope.correlation.command_id):
+                    if self._driver.phase is not RuntimePhase.CLOSED:
+                        self._driver.stop()
+            return envelope, stop_work
+
         if envelope.command in DATAFLOW_SCOPE_COMMANDS:
             work = self._plan_dataflow(envelope)
             if not self._lock.acquire():

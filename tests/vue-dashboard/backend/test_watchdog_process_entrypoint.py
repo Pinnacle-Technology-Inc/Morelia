@@ -663,12 +663,15 @@ def test_shutdown_after_fatal_stops_and_closes_the_driver(tmp_path):
 def test_shutdown_is_idempotent(tmp_path):
     process, _outbox = _process(tmp_path, transport=lambda envelope, headers: (202, {}))
     process.driver.start()
+    process.driver.shutdown_result = {"ok": True, "teardown_confirmed": True,
+                                      "worker_inventory_complete": True,
+                                      "resources_teardown_confirmed": True}
 
     process.shutdown()
     process.shutdown()
 
-    assert process.driver.stop_calls == 1  # phase left STOPPABLE_PHASES after the first call
-    assert process.driver.close_calls == 2  # close() itself is documented idempotent
+    assert process.driver.stop_calls == 1  # confirmed teardown can be cached
+    assert process.driver.close_calls == 1  # cached shutdown evidence prevents repeated cleanup
 
 
 def test_main_returns_exit_code_1_after_a_fatal_ingest_rejection(tmp_path):

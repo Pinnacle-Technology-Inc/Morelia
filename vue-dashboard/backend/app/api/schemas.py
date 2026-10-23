@@ -221,6 +221,14 @@ class SessionSchema(Schema):
     policy = fields.Enum(PolicyMode, by_value=True)
     experiment_id = fields.String(allow_none=True)
     notes = fields.String(allow_none=True)
+    duration_seconds = fields.Integer(dump_only=True, allow_none=True)
+    recording_bounds = fields.List(fields.Dict(), dump_only=True)
+    started_at = fields.Function(lambda row: (
+        row.started_at.replace(tzinfo=UTC).isoformat() if row.started_at and row.started_at.tzinfo is None
+        else row.started_at.isoformat() if row.started_at else None))
+    ended_at = fields.Function(lambda row: (
+        row.ended_at.replace(tzinfo=UTC).isoformat() if row.ended_at and row.ended_at.tzinfo is None
+        else row.ended_at.isoformat() if row.ended_at else None))
     schedule = fields.Nested(ScheduleSchema, allow_none=True)
     device_flows = fields.List(fields.Raw())
     command_id = fields.String(allow_none=True)

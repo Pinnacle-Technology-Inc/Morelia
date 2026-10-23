@@ -315,11 +315,15 @@ class SessionRepository:
         ).all()
 
     def with_runtime_host_identity(self) -> list[Session]:
-        """Sessions whose persisted host identity can be rehydrated on startup."""
+        """Managed runs needing adoption or cleanup, including lost host ports."""
+        from app.models.runtime_ownership import RuntimeOwnership
         return db.session.scalars(
             db.select(Session).where(
                 Session.dataflow_id.isnot(None),
-                Session.runtime_port.isnot(None),
+                db.or_(
+                    Session.runtime_port.isnot(None),
+                    db.exists().where(RuntimeOwnership.session_id == Session.id),
+                ),
                 Session.status.in_(
                     (
                         SessionStatus.STARTING,

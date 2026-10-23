@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import StringIO
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,7 @@ class FakePopen:
     def __init__(self, args, **kwargs) -> None:
         self.args = list(args)
         self.kwargs = kwargs
-        self.stdout = iter(["PORT:54321\n", "READY\n"])
+        self.stdout = StringIO("PORT:54321\nREADY\n")
         self.pid = 12345
         self._terminated = False
         FakePopen.calls.append(self.args)
@@ -54,8 +55,10 @@ def _session() -> Session:
                 "hardware_id": "hw-driver-selection",
                 "port": "COM4",
                 "parameters": {},
-                "sink_type": "csv",
-                "sink_location": "driver-selection.csv",
+                "sinks": [{
+                    "sink_id": "dev-driver-selection:csv", "name": "csv", "type": "csv",
+                    "parameters": {"file_path": "driver-selection.csv"},
+                }],
             }
         ],
     )

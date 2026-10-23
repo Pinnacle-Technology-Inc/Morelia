@@ -235,13 +235,11 @@ def test_unresolved_uncertain_stream_blocks_same_stream_and_dataflow_but_not_oth
                 target_device_id="dev-a",
             )
 
-        with pytest.raises(OperationConflict, match="unresolved uncertain stream-scope operation"):
-            create_operation(
-                session_id=1,
-                dataflow_id="df-1",
-                command="stop",
-                request_key="stop-key",
-            )
+        # Cancellation must remain actionable even when recovery is uncertain.
+        stop = create_operation(session_id=1, dataflow_id="df-1",
+            command="stop", request_key="stop-key")
+        assert stop.command == "stop"
+        assert uncertain.state == OperationState.UNCERTAIN
 
 def test_unresolved_uncertain_dataflow_blocks_all_scopes(ops_app):
     with ops_app.app_context():

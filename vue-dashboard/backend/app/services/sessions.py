@@ -12,6 +12,7 @@ wires this via request_logging middleware. CLI callers must bind it manually:
 
 import json
 from collections.abc import Mapping
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from uuid import uuid4
@@ -22,9 +23,10 @@ from structlog.contextvars import bound_contextvars, get_contextvars
 
 from app.config import get_config
 from app.control.event_poller import telemetry_freshness
+from app.control.orphan_teardown import AdministrativeStopEvidence, ownership_teardown_confirmed
 from app.database import db, transaction
 from app.domain.duration import validate_duration_seconds
-from app.domain.enums import OperationState, PolicyMode, SessionStatus
+from app.domain.enums import OperationState, PolicyMode, SessionStatus, RuntimeOwnershipState, WatchdogProcessState
 from app.domain.errors import (
     CommandInFlight,
     EmptySession,
@@ -34,6 +36,7 @@ from app.domain.errors import (
     RuntimeStartupFailed,
     SessionNotFound,
     SessionRunRequestConflict,
+    StopProofMissing,
 )
 from app.models.backend_event import BackendEvent
 from app.models.incident import Incident
@@ -53,6 +56,7 @@ from app.services import (
     incidents,
     manifests,
     output_finalization,
+    session_activity,
     session_templates,
     recovery_contract,
 )
@@ -339,6 +343,14 @@ def _discard_provisional_session(session_id: int) -> None:
     for the new atomic command before any dispatch attempt. Explicit child
     deletion keeps the existing non-cascading historical FKs intact elsewhere.
     """
+    row = db.session.get(Session, session_id)
+    if row is not None and row.creation_request_key:
+        # Keep the public idempotency tombstone even if no process launched.
+        # Retrying cannot produce another run/window under the same key.
+        with transaction():
+            row.status = SessionStatus.COMPLETED
+            row.command_in_flight = False
+        return
     with transaction():
         db.session.execute(db.delete(RecoveryGap).where(RecoveryGap.session_id == session_id))
         db.session.execute(db.delete(BackendEvent).where(BackendEvent.session_id == session_id))
@@ -422,7 +434,7 @@ def create_run(data: dict, *, supervisor=None) -> Session:
     if not created:
         return session
     if supervisor is None:
-        _repo.delete(session.id)
+        _discard_provisional_session(session.id)
         raise RuntimeStartupFailed(
             error_type="RuntimeSupervisorUnavailable",
             message="The managed runtime supervisor is unavailable.",
@@ -725,15 +737,43 @@ def start_managed(
     try:
         claimed_config_ids = _claim_device_configs(session, session_id, force=force)
         with transaction():
-            if not _repo.try_acquire_in_flight_lock(session_id):
+            reserved = db.session.execute(db.update(Session).where(
+                Session.id == session_id, Session.status.in_(_STARTABLE),
+                Session.command_in_flight.is_(False),
+            ).values(command_in_flight=True, command_id=operation.command_id,
+                     dataflow_id=dataflow_id, watchdog_id=watchdog_id,
+                     status=SessionStatus.STARTING))
+            if reserved.rowcount != 1:
                 raise CommandInFlight(session_id)
-            session.command_in_flight = True
-            session.command_id = operation.command_id
 
         session._pending_dataflow_id = dataflow_id
         session._pending_request_id = request_id
         spawn_attempted = True
         supervisor.spawn(session, manifest=manifest)
+        db.session.refresh(session)
+        if session.status in {SessionStatus.STOPPING, SessionStatus.COMPLETED}:
+            # Stop arrived while hardware was opening. Use its original command
+            # identity and never dispatch a new start after cancellation.
+            if session.status == SessionStatus.STOPPING:
+                with transaction():
+                    session.command_in_flight = False
+                pending_stop = _stop_operation(session)
+                stop_envelope = prepare_command(command="stop", dataflow_id=dataflow_id,
+                    watchdog_id=_active_watchdog_id(dataflow_id) or watchdog_id,
+                    command_id=pending_stop.command_id, runtime_id=_active_runtime_id(dataflow_id))
+                owners = _runtimes.list_for_session(session.id)
+                owner = _runtimes.unresolved_for_dataflow(dataflow_id) or (owners[0] if owners else None)
+                result = supervisor.stop(session, envelope=stop_envelope)
+                if result is None:
+                    raise StopProofMissing(dataflow_id, runtime_id=owner.runtime_id if owner else None)
+                apply_shutdown_result(session, result, owner)
+            with transaction():
+                operation.state = OperationState.FAILED
+                operation.error_code = "start_cancelled"
+                operation.error_message = "Start was cancelled by user Stop."
+                session.command_in_flight = False
+            _clear_pending_start_identity(session)
+            return session
         runtime_id = _active_runtime_id(dataflow_id)
         if runtime_id is not None:
             operation = stamp_runtime_id(operation.operation_id, runtime_id)
@@ -756,8 +796,13 @@ def start_managed(
         teardown_proven = not spawn_attempted
         if spawn_attempted:
             try:
-                supervisor.stop(session)
-                teardown_proven = True
+                owners = _runtimes.list_for_session(session.id)
+                owner = _runtimes.unresolved_for_dataflow(dataflow_id) or (owners[0] if owners else None)
+                shutdown_result = supervisor.stop(session)
+                if shutdown_result is None:
+                    raise StopProofMissing(dataflow_id, runtime_id=owner.runtime_id if owner else None)
+                apply_shutdown_result(session, shutdown_result, owner)
+                teardown_proven = session.status == SessionStatus.COMPLETED
             except Exception as stop_exc:
                 _log.warning(
                     "start rollback: stopping the just-spawned host failed — "
@@ -766,19 +811,21 @@ def start_managed(
                     error=type(stop_exc).__name__,
                     message=str(stop_exc),
                 )
-                # A spawn that failed before recording any identity has no
-                # child for stop() to find; absence of both durable and local
-                # identity is positive proof that there is nothing to retain.
-                teardown_proven = (
-                    session.runtime_port is None
-                    and _runtimes.active_for_dataflow(dataflow_id) is None
+                # Missing identity is not proof that a child never launched.
+                owners = _runtimes.list_for_session(session.id)
+                teardown_proven = bool(owners) and all(
+                    (owner.details or {}).get("host_launch_failed") is True
+                    and not owner.watchdog_id for owner in owners
                 )
-        if not dispatch_attempted or teardown_proven:
-            _release_device_configs(claimed_config_ids)
+        db.session.refresh(session)
+        cancellation_committed = session.status in {SessionStatus.STOPPING, SessionStatus.COMPLETED}
+        if teardown_proven:
+            _release_device_configs(claimed_config_ids, session_id=session.id)
         if (
             discard_on_predispatch_failure
             and not dispatch_attempted
             and teardown_proven
+            and not cancellation_committed
         ):
             _discard_provisional_session(session_id)
             _clear_pending_start_identity(session)
@@ -787,25 +834,33 @@ def start_managed(
             spawn_attempted and not teardown_proven
         )
         with transaction():
-            session.command_in_flight = False
+            rollback_values = {"command_in_flight": False}
             if publish_for_reconciliation:
-                session.dataflow_id = dataflow_id
-                session.watchdog_id = watchdog_id
+                rollback_values.update(dataflow_id=dataflow_id, watchdog_id=watchdog_id)
             if discard_on_predispatch_failure and dispatch_attempted:
                 # Never expose a repairable pre-run record. A dispatch error is ambiguous with
                 # respect to command acceptance; proven teardown makes the run
                 # completed, while unproven teardown remains a STARTING recovery
                 # case with its claims and runtime identity intact.
-                session.status = (
-                    SessionStatus.COMPLETED if teardown_proven else SessionStatus.STARTING
+                rollback_status = (
+                    SessionStatus.COMPLETED if teardown_proven else SessionStatus.STOPPING
                 )
             elif publish_for_reconciliation and not teardown_proven:
-                session.status = SessionStatus.STARTING
+                rollback_status = SessionStatus.STOPPING
             else:
-                session.status = original_status
+                rollback_status = original_status
             if teardown_proven:
-                session.runtime_port = None
-                session.runtime_token = None
+                rollback_values.update(runtime_port=None, runtime_token=None)
+            db.session.execute(db.update(Session).where(Session.id == session_id)
+                .values(**rollback_values))
+            # A Stop can commit after the refresh above. Preserve cancellation
+            # at the actual database write, not merely in this ORM snapshot.
+            db.session.execute(db.update(Session).where(
+                Session.id == session_id,
+                Session.status.not_in([SessionStatus.STOPPING, SessionStatus.COMPLETED,
+                                       SessionStatus.CANCELLED]),
+            ).values(status=rollback_status))
+        db.session.refresh(session)
         if publish_for_reconciliation and envelope is not None:
             publish_command(envelope)
         _clear_pending_start_identity(session)
@@ -837,15 +892,22 @@ def start_managed(
             )
         raise
 
+    db.session.refresh(session)
     with transaction():
         session.dataflow_id = dataflow_id
         session.watchdog_id = watchdog_id
-        session.status = SessionStatus.STARTING
+        if session.status in _STARTABLE:
+            session.status = SessionStatus.STARTING
     _clear_pending_start_identity(session)
     publish_command(envelope)
     transition_operation(operation.operation_id, OperationState.DISPATCHED)
     transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
+    db.session.refresh(session)
+    if session.status in {SessionStatus.STOPPING, SessionStatus.COMPLETED}:
+        with transaction():
+            session.command_in_flight = False
+        return session
     for config_id in claimed_config_ids:
         device_configs.activate(config_id, session_id)
 
@@ -861,121 +923,517 @@ def _clear_pending_start_identity(session: Session) -> None:
             delattr(session, name)
 
 
-def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session:
-    """Stop a managed runtime host and release the session's claimed configs."""
-    session = get(session_id)
-    if session.command_in_flight:
-        raise CommandInFlight(session_id)
-    if session.status not in _STOPPABLE:
-        raise InvalidTransition(session.status)
-
-    dataflow_id = session.dataflow_id or uuid4().hex
-    watchdog_id = session.watchdog_id or uuid4().hex
-    request_id = _request_id("stopping")
-    # validate_sink_locations=False: this session is ACTIVE, so its sink
-    # files already exist by design (the running host is writing to them
-    # right now) — re-checking here would reject the stop over the
-    # session's own output file (see manifests.resolve's docstring).
-    manifest = manifests.resolve(session_id, dataflow_id=dataflow_id, validate_sink_locations=False)
-
-    active_runtime_id = _active_runtime_id(dataflow_id)
+def _stop_operation(session: Session, *, command_id=None, requested_at=None) -> Operation:
+    """One logical shutdown per dataflow, shared by manual and autonomous stops."""
+    existing = db.session.scalars(db.select(Operation).where(
+        Operation.session_id == session.id, Operation.command == "stop"
+    ).order_by(Operation.id.asc())).first()
+    if existing is not None:
+        return existing
+    dataflow_id = session.dataflow_id or f"unstarted-{session.id}"
     try:
         operation = create_operation(
-            session_id=session_id,
-            dataflow_id=dataflow_id,
-            command="stop",
-            request_key=request_id,
-            request_id=request_id,
-            watchdog_id=watchdog_id,
-            manifest_hash=manifest.hash,
-            runtime_id=active_runtime_id,
+            session_id=session.id, dataflow_id=dataflow_id, command="stop",
+            request_key=f"stop:{dataflow_id}", command_id=command_id,
+            runtime_id=_active_runtime_id(dataflow_id),
+            watchdog_id=_active_watchdog_id(dataflow_id),
+            details={"requested_reason": "user_stop"} if command_id is None else {},
         )
-    except OperationConflict as exc:
-        raise CommandInFlight(
-            session_id,
-            code=exc.code,
-            details=exc.details,
-        ) from exc
-
-    transition_operation(operation.operation_id, OperationState.CLAIMED)
-
-    envelope = prepare_command(
-        command="stop",
-        dataflow_id=dataflow_id,
-        # Target the runtime host's actual actively-tracked watchdog process
-        # identity when one is known — not the session's own watchdog_id —
-        # so a WatchdogProcessDriver-backed host doesn't silently 400-reject
-        # this as a stale command (see _active_watchdog_id). Falls back to
-        # the session-level identity for drivers that don't supervise a
-        # separate watchdog process at all (no active identity to target).
-        watchdog_id=_active_watchdog_id(dataflow_id) or watchdog_id,
-        command_id=operation.command_id,
-        runtime_id=active_runtime_id,
-    )
-
-    try:
+    except OperationConflict:
+        # Simultaneous user/expiry requests may both observe no operation.
+        # The unique key elects one; all losing requests join that shutdown.
+        operation = db.session.scalars(db.select(Operation).where(
+            Operation.session_id == session.id, Operation.command == "stop"
+        ).order_by(Operation.id.asc())).first()
+        if operation is None:
+            raise
+        return operation
+    if requested_at is not None:
         with transaction():
-            if not _repo.try_acquire_in_flight_lock(session_id):
-                raise CommandInFlight(session_id)
-            session.command_in_flight = True
-            session.command_id = envelope.correlation.command_id
-            session.dataflow_id = dataflow_id
-            session.watchdog_id = watchdog_id
-            session.status = SessionStatus.STOPPING
+            operation.queued_at = requested_at
+    return operation
 
-        supervisor.stop(session, envelope=envelope)
-    except Exception as exc:
-        if force:
-            # A forced stop still terminalizes the session and frees its
-            # devices — otherwise the claim outlives the (now untracked or
-            # unreachable) runtime with no recovery route but DB surgery. The
-            # operation stays UNCERTAIN to record that teardown was unclean.
-            _release_session_device_configs(session)
-            with transaction():
-                session.command_in_flight = False
-                session.status = SessionStatus.COMPLETED
-                session.runtime_port = None
-                session.runtime_token = None
-            _resolve_stop_supervision_incidents(session, dataflow_id)
-            transition_operation(
-                operation.operation_id,
-                OperationState.UNCERTAIN,
-                error_code="forced_stop",
-                error_message=str(exc),
-                details={"forced": True},
-            )
-            return session
-        with transaction():
-            session.command_in_flight = False
-            session.status = SessionStatus.ACTIVE
-        transition_operation(
-            operation.operation_id,
-            OperationState.FAILED,
-            error_code=type(exc).__name__,
-            error_message=str(exc),
+
+def apply_shutdown_result(
+    session: Session,
+    result: Mapping | AdministrativeStopEvidence | None,
+    ownership: RuntimeOwnership | None,
+    *,
+    stop_reason: str = "user_stop",
+) -> Session:
+    """Consume a supervisor result without inventing a second completion policy.
+
+    Administrative evidence has already been projected under the hardware lease.
+    Validate that persisted proof, but do not project it again after lease release.
+    Reconciliation explicitly calls apply_administrative_stop_evidence to replay
+    historical proof when another producer's teardown changes the all-owner gate.
+    """
+    if isinstance(result, AdministrativeStopEvidence):
+        expected = asdict(result)
+        if ownership is None or ownership.session_id != session.id or any(
+            getattr(ownership, key) != getattr(result, key)
+            for key in ("runtime_id", "watchdog_id", "dataflow_id", "manifest_hash")
+        ):
+            raise StopProofMissing(session.dataflow_id, runtime_id=result.runtime_id)
+        details = ownership.details or {}
+        persisted = details.get("administrative_stop_evidence")
+        historical = (details.get("historical_administrative_stop_evidence") or {}).get(result.watchdog_id)
+        if expected not in (persisted, historical):
+            raise StopProofMissing(session.dataflow_id, runtime_id=result.runtime_id)
+        return get(session.id)
+    if result is None:
+        # A missing receipt is compatible only with an untracked legacy driver.
+        # Cleared ports or a historical STOPPED row do not erase producer history.
+        if (session.duration_seconds is not None or session.runtime_port is not None
+                or ownership is not None or _runtimes.list_for_session(session.id)):
+            raise StopProofMissing(session.dataflow_id,
+                                   runtime_id=ownership.runtime_id if ownership else None)
+        return _complete_legacy_stop(session, stop_reason=stop_reason)
+    if not isinstance(result, Mapping) or ownership is None or ownership.session_id != session.id:
+        raise StopProofMissing(session.dataflow_id,
+                               runtime_id=ownership.runtime_id if ownership else None)
+    from app.contracts.watchdog_process_protocol import WatchdogTelemetryEnvelope
+    from app.services.event_ingest import ingest_watchdog_report
+    payload = dict(result)
+    command_id = payload.get("command_id")
+    if not command_id:
+        raise ValueError("shutdown receipt is missing command identity")
+    receipt_hash = sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    report_id = sha256(f"{ownership.runtime_id}:{ownership.watchdog_id}:{command_id}:stop-result:{receipt_hash}".encode()).hexdigest()
+    ingest_watchdog_report(WatchdogTelemetryEnvelope(
+        report_id=report_id, dataflow_id=ownership.dataflow_id,
+        runtime_id=ownership.runtime_id, watchdog_id=ownership.watchdog_id,
+        manifest_hash=ownership.manifest_hash, event_type="runtime.stop_finished", payload=payload,
+    ).to_dict())
+    return get(session.id)
+
+
+def replay_shutdown_result(session: Session, ownership: RuntimeOwnership) -> Session:
+    """Reconsider durable proof after another producer's teardown changes the gate."""
+    record = (ownership.details or {}).get("administrative_stop_evidence")
+    receipt = ownership.watchdog_exit_details or {}
+    if (isinstance(record, Mapping) and isinstance(record.get("payload"), Mapping)
+            and record.get("runtime_id") == ownership.runtime_id
+            and record.get("watchdog_id") == ownership.watchdog_id):
+        return apply_administrative_stop_evidence(
+            session, AdministrativeStopEvidence(**record), ownership,
         )
-        raise
+    if receipt.get("teardown_confirmed") is True and ownership.watchdog_id:
+        return apply_shutdown_result(session, receipt, ownership)
+    return session
 
-    _resolve_stop_supervision_incidents(session, dataflow_id)
-    transition_operation(operation.operation_id, OperationState.DISPATCHED)
-    transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
-    # Clean user stop is a generation boundary: finalize each logical output's
-    # acquisition complete and enqueue any EDF/PVFS merge WITHOUT waiting for it
-    # (packet 29). Best-effort — a scheduling failure leaves the outputs in a
-    # retryable, already-completed state and must never block the stop or trap
-    # the hardware; the acquisition is never reopened on a later start.
-    _schedule_stop_finalization(session)
-
+def _complete_legacy_stop(session: Session, *, stop_reason: str) -> Session:
+    """Complete the explicitly qualified, untracked synchronous driver path."""
+    operation = _stop_operation(session)
+    _schedule_stop_finalization(session, completion_cause=stop_reason)
     _release_session_device_configs(session)
-
     with transaction():
+        operation.state = OperationState.SUCCEEDED
+        operation.finished_at = datetime.now(UTC)
+        operation.details = dict(operation.details or {}) | {
+            "stop_reason": stop_reason, "requested_at": datetime.now(UTC).isoformat(),
+            "legacy_synchronous_stop": True,
+        }
         session.command_in_flight = False
         session.status = SessionStatus.COMPLETED
         session.runtime_port = None
         session.runtime_token = None
-
+    _resolve_stop_supervision_incidents(session, session.dataflow_id or f"unstarted-{session.id}")
     return session
+
+
+def _complete_stop_operation(operation: Operation, details: dict) -> None:
+    """Stopping succeeds when teardown is proven; recording concerns are warnings.
+
+    The caller owns the transaction and verifies the current producer identity.
+    Raw receipts and output-integrity evidence are retained independently.
+    """
+    if details.get("teardown_confirmed") is not True:
+        raise ValueError("stop completion requires confirmed teardown")
+    details = dict(details)
+    if operation.error_code or operation.error_message:
+        details.setdefault("previous_stop_error", {
+            "code": operation.error_code, "message": operation.error_message,
+        })
+    warnings = [warning for warning in details.get("warnings", [])
+                if warning.get("code") != "unclean_shutdown"]
+    if details.get("output_integrity_confirmed") is not True:
+        warnings.append({
+            "code": "unclean_shutdown",
+            "message": "Session stopped, but recording integrity could not be confirmed. Review the recording diagnostics.",
+        })
+    details["warnings"] = warnings
+    operation.details = details
+    operation.state = OperationState.SUCCEEDED
+    operation.finished_at = operation.finished_at or datetime.now(UTC)
+    operation.error_code = None
+    operation.error_message = None
+    if not details.get("completion_activity_id"):
+        activity = session_activity.record(
+            session_id=operation.session_id, dataflow_id=operation.dataflow_id,
+            kind="operation.completed", category="session",
+            severity="warning" if warnings else "success",
+            title="Stop completed with warnings" if warnings else "Stop completed",
+            summary="; ".join(warning["message"] for warning in warnings) if warnings else "The session stopped.",
+            source_type="operation", source_id=operation.operation_id,
+            operation_id=operation.operation_id, command_id=operation.command_id,
+            details={"command": "stop", "warnings": warnings},
+            occurred_at=operation.finished_at, commit=False,
+        )
+        operation.details = {**details, "completion_activity_id": activity.activity_id}
+
+
+def reconcile_completed_stop_operations(*, session_ids: tuple[int, ...] | None = None) -> int:
+    """Upgrade old failed-stop projections without changing shutdown evidence."""
+    repaired = []
+    with transaction():
+        query = db.select(Operation).join(
+            Session, Session.id == Operation.session_id,
+        ).where(
+            Operation.command == "stop",
+            Operation.state.in_((OperationState.FAILED, OperationState.UNCERTAIN, OperationState.SUCCEEDED)),
+            Session.status == SessionStatus.COMPLETED,
+            Operation.dataflow_id == Session.dataflow_id,
+        )
+        if session_ids is not None:
+            query = query.where(Operation.session_id.in_(session_ids))
+        operations = db.session.scalars(query).all()
+        for operation in operations:
+            details = dict(operation.details or {})
+            if (details.get("teardown_confirmed") is True
+                    and (operation.state != OperationState.SUCCEEDED
+                         or not details.get("completion_activity_id"))):
+                _complete_stop_operation(operation, details)
+                repaired.append(operation)
+    for operation in repaired:
+        incidents.evaluate_operation_success(operation)
+    return len(repaired)
+
+
+def apply_administrative_stop_evidence(
+    session: Session, evidence: AdministrativeStopEvidence, ownership: RuntimeOwnership,
+) -> Session:
+    """Project independently proven process teardown without inventing a receipt.
+
+    Administrative cleanup cannot certify output integrity. The original watchdog
+    receipt and its failures remain intact, even when cleanup repairs projection.
+    """
+    payload = dict(evidence.payload)
+    if (evidence.runtime_id != ownership.runtime_id
+            or evidence.dataflow_id != ownership.dataflow_id
+            or evidence.manifest_hash != ownership.manifest_hash
+            or ownership.session_id != session.id
+            or payload.get("teardown_confirmed") is not True
+            or payload.get("output_integrity_confirmed") is not False):
+        raise ValueError("administrative teardown evidence identity or proof mismatch")
+    for key in ("command_id", "stop_reason", "requested_at"):
+        if not payload.get(key):
+            raise ValueError(f"administrative teardown evidence missing {key}")
+    record = {"runtime_id": evidence.runtime_id, "watchdog_id": evidence.watchdog_id,
+              "dataflow_id": evidence.dataflow_id, "manifest_hash": evidence.manifest_hash,
+              "payload": payload, "observations": dict(evidence.observations)}
+    operation = _stop_operation(session, command_id=payload["command_id"])
+    current = False
+    with transaction():
+        # Serialize the projection and claim release against session mutations.
+        db.session.execute(db.update(Session).where(Session.id == session.id)
+                           .values(command_in_flight=Session.command_in_flight))
+        db.session.refresh(session)
+        db.session.refresh(ownership)
+        db.session.refresh(operation)
+        owners = _runtimes.list_for_session(session.id)
+        exact_owner = (ownership.watchdog_id == evidence.watchdog_id
+                       and ownership.manifest_hash == evidence.manifest_hash
+                       and ownership.dataflow_id == evidence.dataflow_id
+                       and ownership.session_id == session.id)
+        current = bool(owners and owners[0].runtime_id == evidence.runtime_id
+                       and exact_owner
+                       and session.dataflow_id == evidence.dataflow_id
+                       and all(owner.runtime_id == evidence.runtime_id
+                               or ownership_teardown_confirmed(owner) for owner in owners))
+        owner_details = dict(ownership.details or {})
+        details = dict(operation.details or {})
+        if not current:
+            history = dict(details.get("historical_administrative_stop_evidence") or {})
+            history[f"{evidence.runtime_id}:{evidence.watchdog_id}"] = record
+            details["historical_administrative_stop_evidence"] = history
+            operation.details = details
+            owner_history = dict(owner_details.get("historical_administrative_stop_evidence") or {})
+            owner_history[evidence.watchdog_id] = record
+            ownership.details = {**owner_details, "historical_administrative_stop_evidence": owner_history}
+            if exact_owner:
+                # Proof retires this exact producer even when a different
+                # unproven owner prevents session-wide terminal projection.
+                ownership.details = {**ownership.details, "administrative_stop_evidence": record}
+                ownership.state = RuntimeOwnershipState.STOPPED
+                ownership.stopped_at = ownership.stopped_at or datetime.now(UTC)
+                ownership.watchdog_state = WatchdogProcessState.STOPPED
+            return session
+        owner_details["administrative_stop_evidence"] = record
+        ownership.details = owner_details
+        details["administrative_stop_evidence"] = record
+        details.setdefault("stop_reason", payload["stop_reason"])
+        details.setdefault("requested_at", payload["requested_at"])
+        details.setdefault("shutdown_command_id", payload["command_id"])
+        details["teardown_confirmed"] = True
+        details["output_integrity_confirmed"] = False
+        ownership.state = RuntimeOwnershipState.STOPPED
+        ownership.stopped_at = ownership.stopped_at or datetime.now(UTC)
+        ownership.watchdog_state = WatchdogProcessState.STOPPED
+        _complete_proven_stop(session, operation, details)
+    incidents.evaluate_operation_success(operation)
+    return session
+
+
+def _interrupt_session_outputs(session_id: int) -> None:
+    """Preserve incomplete output inside the caller's projection transaction."""
+    for output in db.session.scalars(db.select(OutputFile).where(OutputFile.session_id == session_id)):
+        if output.acquisition_state != "complete":
+            output.acquisition_state = "interrupted"
+        output.termination_reason = output.termination_reason or "forced"
+        if output.artifact_state in {"merge_pending", "merging"}:
+            output.artifact_state = "merge_blocked"
+
+
+def _complete_proven_stop(session: Session, operation: Operation, details: dict) -> None:
+    """Apply terminal state inside the caller's fenced proof transaction.
+
+    Receipt authentication and the all-owner check remain with each evidence
+    source. Both sources share these output, operation and claim mutations.
+    """
+    from app.models.device_config import DeviceConfig
+    from app.domain.enums import DeviceClaimState
+
+    _complete_stop_operation(operation, details)
+    if details.get("output_integrity_confirmed") is not True:
+        _interrupt_session_outputs(session.id)
+    db.session.execute(db.update(DeviceConfig).where(
+        DeviceConfig.claimed_session_id == session.id,
+    ).values(claim_state=DeviceClaimState.FREE, claimed_session_id=None,
+             claim_expires_at=None))
+    session.status = SessionStatus.COMPLETED
+    session.command_in_flight = False
+    session.runtime_port = None
+    session.runtime_token = None
+
+
+def reconcile_terminal_run(session_id: int, event, supervisor=None) -> Session:
+    """Project authenticated stop evidence without confusing teardown and samples.
+
+    Historical receipts are retained but cannot complete a newer producer.
+    Replaying a receipt repairs projection/finalization after a interrupted commit.
+    """
+    from app.services.event_ingest import _utc_timestamp
+    session = get(session_id)
+    payload = dict(event.payload)
+    ownership = _runtimes.get(event.runtime_id)
+    if ownership is None:
+        raise ValueError("stop evidence has no recorded runtime ownership")
+    request_time = _utc_timestamp(payload["requested_at"], "requested_at")
+    operation = _stop_operation(session, command_id=payload["command_id"], requested_at=request_time)
+    finished = event.event_type == "runtime.stop_finished"
+    with transaction():
+        db.session.execute(db.update(Session).where(Session.id == session.id)
+                           .values(command_in_flight=Session.command_in_flight))
+        db.session.refresh(session)
+        db.session.refresh(ownership)
+        db.session.refresh(operation)
+        owners = _runtimes.list_for_session(session_id)
+        exact_owner = (ownership.watchdog_id == event.watchdog_id
+                       and ownership.dataflow_id == event.dataflow_id
+                       and ownership.manifest_hash == event.manifest_hash
+                       and ownership.session_id == session.id)
+        current = bool(owners and owners[0].runtime_id == event.runtime_id
+                       and exact_owner
+                       and session.dataflow_id == event.dataflow_id)
+        releasable = current and all(
+            owner.runtime_id == event.runtime_id or ownership_teardown_confirmed(owner)
+            or (owner.watchdog_id == event.watchdog_id
+                and owner.dataflow_id == ownership.dataflow_id
+                and owner.manifest_hash == ownership.manifest_hash) for owner in owners
+        )
+        owner_details = dict(ownership.details or {})
+        owner_details.setdefault("stop_intent", {
+            key: payload[key] for key in ("command_id", "stop_reason", "requested_at")
+        })
+        ownership.details = owner_details
+        details = dict(operation.details or {})
+        # A later request/report cannot rewrite the accepted cause or replace
+        # a cached failure with a generic CLOSED state.
+        details.setdefault("stop_reason", payload["stop_reason"])
+        details.setdefault("requested_at", payload["requested_at"])
+        details.setdefault("shutdown_command_id", payload["command_id"])
+        if not current:
+            history = dict(details.get("historical_shutdown_results") or {})
+            history[event.watchdog_id] = payload
+            details["historical_shutdown_results"] = history
+            if (finished and payload["teardown_confirmed"] is True and exact_owner
+                    and owners and owners[0].runtime_id != event.runtime_id):
+                ownership.watchdog_exit_details = payload
+                ownership.state = RuntimeOwnershipState.STOPPED
+                ownership.stopped_at = ownership.stopped_at or datetime.now(UTC)
+                ownership.watchdog_state = WatchdogProcessState.STOPPED
+        elif finished and (not details.get("stop_finished_report_id") or (
+            details.get("teardown_confirmed") is not True and payload["teardown_confirmed"] is True
+        )):
+            old_reason = details.get("stop_reason")
+            old_request = details.get("requested_at")
+            previous_receipt = details.get("stop_finished_report_id")
+            administrative_teardown = bool(details.get("administrative_stop_evidence"))
+            original_failure = administrative_teardown or (
+                previous_receipt and details.get("output_integrity_confirmed") is not True
+            )
+            if previous_receipt:
+                history = dict(details.get("shutdown_receipt_history") or {})
+                history[previous_receipt] = {key: details.get(key) for key in (
+                    "shutdown_result", "teardown_confirmed", "output_integrity_confirmed", "errors"
+                )}
+                details["shutdown_receipt_history"] = history
+            details.update(payload)
+            details["stop_reason"] = old_reason or payload["stop_reason"]
+            details["requested_at"] = old_request or payload["requested_at"]
+            if original_failure:
+                details["output_integrity_confirmed"] = False
+            if administrative_teardown:
+                # A delayed raw receipt records the watchdog's earlier view;
+                # it cannot revoke independently established process teardown.
+                details["teardown_confirmed"] = True
+            details["stop_finished_report_id"] = event.report_id
+            operation.finished_at = datetime.now(UTC)
+            teardown = details["teardown_confirmed"]
+            operation.state = OperationState.SUCCEEDED if teardown and releasable else OperationState.UNCERTAIN
+            if not teardown or not releasable:
+                operation.error_code = "stop_proof_missing"
+                operation.error_message = "; ".join(str(x) for x in payload.get("errors", []))[:1024] or operation.error_code
+            ownership.watchdog_exit_details = payload
+            ownership.state = RuntimeOwnershipState.STOPPED if teardown else RuntimeOwnershipState.UNCERTAIN
+            if teardown:
+                ownership.stopped_at = datetime.now(UTC)
+                ownership.watchdog_state = WatchdogProcessState.STOPPED
+        elif operation.state not in {OperationState.SUCCEEDED, OperationState.FAILED, OperationState.UNCERTAIN}:
+            operation.state = OperationState.RUNNING
+        operation.details = details
+        if current and session.status != SessionStatus.COMPLETED:
+            session.status = SessionStatus.STOPPING
+        if current:
+            session.command_in_flight = False
+        if releasable and finished and details.get("teardown_confirmed") is True:
+            _complete_proven_stop(session, operation, details)
+
+    evidence = operation.details or {}
+    if releasable and finished and evidence.get("teardown_confirmed") is True:
+        if evidence.get("output_integrity_confirmed") is True:
+            _schedule_stop_finalization(session, completion_cause=evidence["stop_reason"])
+        incidents.evaluate_operation_success(operation)
+        _resolve_stop_supervision_incidents(session, event.dataflow_id)
+    elif finished and current:
+        incidents.evaluate_operation_failure(operation)
+    return session
+
+
+def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session:
+    """Cancel at any lifecycle stage; join a previously accepted shutdown."""
+    session = get(session_id)
+    if session.status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED}:
+        return session
+    operation = _stop_operation(session)
+    now = datetime.now(UTC)
+    # Atomically win against schedule/start reservation. If dispatch already
+    # owns the row, persist cancellation below and let its launch observe it.
+    with transaction():
+        result = db.session.execute(db.update(Session).where(
+            Session.id == session_id,
+            Session.status.in_((SessionStatus.PREPARING, SessionStatus.SCHEDULED)),
+            Session.command_in_flight.is_(False),
+            Session.dataflow_id.is_(None),
+        ).values(status=SessionStatus.COMPLETED, scheduled_for=None,
+                 schedule_claim_token=None, schedule_claim_expires_at=None,
+                 cancelled_at=now,
+                 cancellation_details={"reason": "user_stop", "requested_at": now.isoformat()}))
+        if result.rowcount:
+            operation.state = OperationState.SUCCEEDED
+            operation.finished_at = now
+            operation.details = {"stop_reason": "user_stop", "requested_at": now.isoformat(),
+                "before_scheduled_start": bool(session.schedule), "teardown_confirmed": True,
+                "output_integrity_confirmed": True, "non_launch_confirmed": True}
+            return session
+    with transaction():
+        db.session.execute(db.update(Session).where(
+            Session.id == session_id,
+            Session.status.not_in([SessionStatus.COMPLETED, SessionStatus.CANCELLED]),
+        ).values(status=SessionStatus.STOPPING))
+        details = dict(operation.details or {})
+        details.setdefault("requested_reason", "user_stop")
+        details.setdefault("manual_requested_at", now.isoformat())
+        db.session.execute(db.update(Operation).where(
+            Operation.id == operation.id,
+            Operation.details["stop_finished_report_id"].as_string().is_(None),
+        ).values(details=details).execution_options(synchronize_session=False))
+    db.session.refresh(operation)
+    db.session.refresh(session)
+    if session.status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED}:
+        return session
+    dataflow_id = session.dataflow_id or f"unstarted-{session.id}"
+    ownership = _runtimes.unresolved_for_dataflow(dataflow_id)
+    if ownership is None:
+        ownership = next((owner for owner in _runtimes.list_for_session(session.id)
+                          if owner.dataflow_id == dataflow_id), None)
+    # Startup owns dispatch until it has a target identity. A historical
+    # STOPPED label cannot hide an existing identity behind this guard.
+    if session.command_in_flight and ownership is None:
+        return session
+    if ownership is not None:
+        with transaction():
+            owner_details = dict(ownership.details or {})
+            owner_details.setdefault("pending_stop_request", {
+                "command_id": operation.command_id,
+                "stop_reason": (operation.details or {}).get("stop_reason", "user_stop"),
+                "requested_at": (operation.details or {}).get("requested_at") or (operation.details or {}).get("manual_requested_at", now.isoformat()),
+            })
+            ownership.details = owner_details
+    envelope = prepare_command(command="stop", dataflow_id=dataflow_id,
+        watchdog_id=(ownership.watchdog_id if ownership is not None else None) or session.watchdog_id or uuid4().hex,
+        command_id=operation.command_id, runtime_id=ownership.runtime_id if ownership is not None else None)
+    try:
+        with transaction():
+            db.session.execute(db.update(Operation).where(
+                Operation.id == operation.id,
+                Operation.details["stop_finished_report_id"].as_string().is_(None),
+            ).values(state=OperationState.DISPATCHED, dispatched_at=now)
+                .execution_options(synchronize_session=False))
+        result = supervisor.stop(session, envelope=envelope)
+        if isinstance(result, Mapping):
+            # Supply this request's context for synchronous custom supervisors.
+            result = dict(result)
+            result.setdefault("command_id", operation.command_id)
+            result.setdefault("stop_reason", "user_stop")
+            result.setdefault("requested_at", now.isoformat())
+            result.setdefault("shutdown_result", {})
+            result.setdefault("teardown_confirmed", False)
+            result.setdefault("output_integrity_confirmed", False)
+        return apply_shutdown_result(session, result, ownership)
+    except Exception as exc:
+        db.session.refresh(operation)
+        with transaction():
+            db.session.execute(db.update(Session).where(
+                Session.id == session_id,
+                Session.status.not_in([SessionStatus.COMPLETED, SessionStatus.CANCELLED]),
+            ).values(command_in_flight=False, status=SessionStatus.STOPPING))
+            db.session.execute(db.update(Operation).where(
+                Operation.id == operation.id,
+                Operation.details["stop_finished_report_id"].as_string().is_(None),
+            ).values(state=OperationState.UNCERTAIN, error_code="stop_proof_missing",
+                error_message=str(exc)[:1024],
+                details=dict(operation.details or {}) | {"force_requested": force})
+                .execution_options(synchronize_session=False))
+        db.session.refresh(operation)
+        db.session.refresh(session)
+        if operation.state == OperationState.UNCERTAIN:
+            incidents.evaluate_operation_failure(operation)
+        # A repeated Stop returns this progress/result. Neither a transport
+        # failure nor force=True is evidence that devices may be released.
+        return session
 
 
 def _resolve_stop_supervision_incidents(session: Session, dataflow_id: str) -> None:
@@ -992,7 +1450,7 @@ def _resolve_stop_supervision_incidents(session: Session, dataflow_id: str) -> N
         )
 
 
-def _schedule_stop_finalization(session: Session) -> None:
+def _schedule_stop_finalization(session: Session, *, completion_cause: str = "user_stop") -> None:
     """Complete + enqueue finalization for a cleanly-stopped session's outputs.
 
     Never raises: the stop has already succeeded and released (or is about to
@@ -1003,7 +1461,7 @@ def _schedule_stop_finalization(session: Session) -> None:
     try:
         output_finalization.complete_session_acquisitions(
             session.id,
-            completion_cause=output_finalization.COMPLETION_USER_STOP,
+            completion_cause=completion_cause,
         )
     except Exception as exc:  # noqa: BLE001 - completion must not fail the stop
         _log.warning(
@@ -1163,23 +1621,28 @@ def _claim_device_configs(session: Session, session_id: int, *, force: bool = Fa
             device_configs.claim(config_id, session_id, force=force, starting=True)
             claimed.append(config_id)
     except Exception:
-        _release_device_configs(claimed)
+        _release_device_configs(claimed, session_id=session_id)
         raise
     return claimed
 
 
 def _release_session_device_configs(session: Session) -> None:
-    _release_device_configs(_device_config_ids(session))
+    from app.models.device_config import DeviceConfig
+    from app.domain.enums import DeviceClaimState
+    # A duplicate terminal event may arrive after another session claimed the
+    # same device. Release only the ownership proven by this session's receipt.
+    with transaction():
+        db.session.execute(db.update(DeviceConfig).where(
+            DeviceConfig.id.in_(_device_config_ids(session)),
+            DeviceConfig.claimed_session_id == session.id,
+        ).values(claim_state=DeviceClaimState.FREE, claimed_session_id=None,
+                 claim_expires_at=None))
 
 
-def _release_device_configs(config_ids: list[int]) -> None:
-    for config_id in reversed(config_ids):
-        try:
-            device_configs.release(config_id)
-        except Exception as exc:
-            _log.warning(
-                "releasing device config claim failed — claim may be leaked "
-                "(next session on this device will see DeviceConfigNotFree)",
-                error=type(exc).__name__,
-                message=str(exc),
-            )
+def _release_device_configs(config_ids: list[int], *, session_id: int) -> None:
+    from app.models.device_config import DeviceConfig
+    from app.domain.enums import DeviceClaimState
+    with transaction():
+        db.session.execute(db.update(DeviceConfig).where(
+            DeviceConfig.id.in_(config_ids), DeviceConfig.claimed_session_id == session_id,
+        ).values(claim_state=DeviceClaimState.FREE, claimed_session_id=None, claim_expires_at=None))
