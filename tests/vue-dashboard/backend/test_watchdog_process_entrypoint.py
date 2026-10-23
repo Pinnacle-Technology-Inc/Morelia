@@ -58,11 +58,6 @@ def _device_flow(device_id: str = "dev-a") -> DeviceFlow:
 
 
 def _manifest(dataflow_id: str = "df-1") -> Manifest:
-    # Use the current manifest schema version: hand-constructing a legacy
-    # schema_version="1" object and round-tripping it through to_dict() is not a
-    # supported path (v1 exists only as inbound wire, normalized to v2 on read —
-    # see Manifest.from_dict). build_process() writes/reads this manifest, so it
-    # must be a native current-version manifest.
     return Manifest(
         schema_version=MANIFEST_SCHEMA_VERSION,
         dataflow_id=dataflow_id,
@@ -668,12 +663,15 @@ def test_shutdown_after_fatal_stops_and_closes_the_driver(tmp_path):
 def test_shutdown_is_idempotent(tmp_path):
     process, _outbox = _process(tmp_path, transport=lambda envelope, headers: (202, {}))
     process.driver.start()
+    process.driver.shutdown_result = {"ok": True, "teardown_confirmed": True,
+                                      "worker_inventory_complete": True,
+                                      "resources_teardown_confirmed": True}
 
     process.shutdown()
     process.shutdown()
 
-    assert process.driver.stop_calls == 1  # phase left STOPPABLE_PHASES after the first call
-    assert process.driver.close_calls == 2  # close() itself is documented idempotent
+    assert process.driver.stop_calls == 1  # confirmed teardown can be cached
+    assert process.driver.close_calls == 1  # cached shutdown evidence prevents repeated cleanup
 
 
 def test_main_returns_exit_code_1_after_a_fatal_ingest_rejection(tmp_path):

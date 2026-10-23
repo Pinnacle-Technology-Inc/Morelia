@@ -19,10 +19,13 @@ from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy import and_, inspect, or_
 
 from app.database import db, transaction
-from app.domain.enums import DeviceClaimState, DeviceType
+from app.domain.connections import validate_device_connection
+from app.domain.enums import (
+    DeviceClaimState, DeviceType, RuntimeOwnershipState, SessionStatus, WatchdogProcessState,
+)
 from app.domain.errors import (
     DeviceClaimConflict,
     DeviceConfigExists,
@@ -33,6 +36,8 @@ from app.domain.errors import (
 )
 from app.models.device_config import DeviceConfig
 from app.models.device_template import DeviceTemplate
+from app.models.runtime_ownership import RuntimeOwnership
+from app.models.session import Session
 from app.repositories.device_configs import DeviceConfigRepository
 from app.services import device_registrations, device_templates
 from app.services.registry import lookup_device
@@ -63,8 +68,9 @@ def create(
     *,
     device_type: DeviceType,
     hardware_id: str,
-    port: str,
+    port: str | None = None,
     parameters: Mapping[str, Any] | None = None,
+    connection: Mapping[str, Any] | None = None,
     nickname: str | None = None,
     source_template: str | None = None,
     source_template_hash: str | None = None,
@@ -90,11 +96,15 @@ def create(
         raise DeviceConfigExists(device_type.value, hardware_id)
 
     canonical = _canonical_parameters(device_type, parameters)
+    canonical_connection = validate_device_connection(device_type, connection)
+    # The address is only a cached observation. Run startup resolves identity.
+    address = hardware_id if canonical_connection["preference"] == "d2xx" else (port or hardware_id)
     row = _repository.create(
         device_type=device_type,
         hardware_id=hardware_id,
-        port=port,
+        port=address,
         parameters=canonical,
+        connection=canonical_connection,
         nickname=nickname,
         source_template=source_template,
         source_template_hash=source_template_hash,
@@ -107,7 +117,8 @@ def create_from_template(
     template: DeviceTemplate,
     *,
     hardware_id: str,
-    port: str,
+    port: str | None = None,
+    connection: Mapping[str, Any] | None = None,
     nickname: str | None = None,
 ) -> DeviceConfig:
     """Build a config by snapshot-copying *template*'s params.
@@ -120,6 +131,7 @@ def create_from_template(
         hardware_id=hardware_id,
         port=port,
         parameters=template.content.get("parameters", {}),
+        connection=connection,
         nickname=nickname,
         source_template=template.file_path,
         source_template_hash=template.content_hash,
@@ -202,9 +214,10 @@ def _resolve_template(reference: str, device_type: DeviceType) -> DeviceTemplate
 def edit(
     config_id: int,
     *,
-    parameters: Mapping[str, Any],
-    update_source_template: bool,
+    parameters: Mapping[str, Any] | None = None,
+    update_source_template: bool = False,
     source_template: str | None = None,
+    connection: Mapping[str, Any] | None = None,
 ) -> DeviceConfig:
     """Rewrite a config's parameters. Allowed only while the config is FREE.
 
@@ -239,6 +252,20 @@ def edit(
     if row.claim_state is not DeviceClaimState.FREE:
         raise DeviceConfigNotFree(config_id)
 
+    canonical_connection = (
+        validate_device_connection(row.device_type, connection) if connection is not None else None
+    )
+    if parameters is None:
+        if update_source_template or source_template is not None:
+            raise ValueError("parameters are required when changing template provenance")
+        if canonical_connection is None:
+            raise ValueError("provide parameters or connection to edit a device config")
+        with transaction():
+            row.connection = canonical_connection
+            if canonical_connection["preference"] == "d2xx":
+                row.port = row.hardware_id
+        return row
+
     canonical = _canonical_parameters(row.device_type, parameters)
 
     # Resolve before opening the transaction so an unknown template aborts the
@@ -251,6 +278,10 @@ def edit(
         # Set params first so the nested template write below commits both the
         # config row and the template in one flush (keeps the branch atomic).
         row.parameters = canonical
+        if canonical_connection is not None:
+            row.connection = canonical_connection
+            if canonical_connection["preference"] == "d2xx":
+                row.port = row.hardware_id
         if relink_target is not None:
             if row.source_template is not None and row.source_template != relink_target.file_path:
                 row.source_template_history = row.source_template
@@ -284,6 +315,98 @@ def delete(config_id: int) -> None:
     _repository.delete(row)
 
 
+def _release_is_safe():
+    """SQL proof checked in the same statement that relinquishes ownership.
+
+    A deadline is only eligibility for cleanup. Launch intent, a command in
+    flight, and unresolved process ownership continue to fence the hardware.
+    Historical STOPPED rows are not proof: require a positive receipt,
+    identity-matching administrative evidence, or a proven failed launch.
+    """
+    administrative = RuntimeOwnership.details["administrative_stop_evidence"]
+    teardown_proven = or_(
+        and_(
+            RuntimeOwnership.watchdog_id.is_not(None),
+            RuntimeOwnership.watchdog_exit_details["teardown_confirmed"].as_boolean().is_(True),
+        ),
+        and_(
+            administrative["runtime_id"].as_string() == RuntimeOwnership.runtime_id,
+            administrative["watchdog_id"].as_string().is_not_distinct_from(RuntimeOwnership.watchdog_id),
+            administrative["dataflow_id"].as_string() == RuntimeOwnership.dataflow_id,
+            administrative["manifest_hash"].as_string() == RuntimeOwnership.manifest_hash,
+            administrative["payload"]["teardown_confirmed"].as_boolean().is_(True),
+        ),
+        and_(
+            RuntimeOwnership.details["host_launch_failed"].as_boolean().is_(True),
+            RuntimeOwnership.pid.is_(None),
+            RuntimeOwnership.watchdog_id.is_(None),
+            RuntimeOwnership.watchdog_pid.is_(None),
+        ),
+    )
+    unresolved_runtime = db.select(RuntimeOwnership.id).where(
+        RuntimeOwnership.session_id == DeviceConfig.claimed_session_id,
+        or_(
+            RuntimeOwnership.state != RuntimeOwnershipState.STOPPED,
+            RuntimeOwnership.stopped_at.is_(None),
+            teardown_proven.is_not(True),
+            and_(
+                or_(RuntimeOwnership.watchdog_id.is_not(None), RuntimeOwnership.watchdog_pid.is_not(None)),
+                or_(
+                    RuntimeOwnership.watchdog_state.is_(None),
+                    RuntimeOwnership.watchdog_state.not_in((WatchdogProcessState.STOPPED, WatchdogProcessState.CRASHED)),
+                ),
+            ),
+        ),
+    ).exists()
+    safe_session = db.select(Session.id).where(
+        Session.id == DeviceConfig.claimed_session_id,
+        Session.command_in_flight.is_(False),
+        Session.runtime_port.is_(None),
+        Session.runtime_token.is_(None),
+        or_(
+            Session.status.in_((SessionStatus.COMPLETED, SessionStatus.CANCELLED)),
+            and_(
+                Session.status.in_((SessionStatus.PREPARING, SessionStatus.SCHEDULED)),
+                Session.command_id.is_(None),
+                Session.dataflow_id.is_(None),
+                Session.watchdog_id.is_(None),
+                Session.started_at.is_(None),
+                ~db.select(RuntimeOwnership.id).where(
+                    RuntimeOwnership.session_id == Session.id,
+                ).exists(),
+            ),
+        ),
+    ).exists()
+    return and_(safe_session, ~unresolved_runtime)
+
+
+def _claim_snapshot(row: DeviceConfig):
+    """Fence mutations against the exact owner, state, and lease observed."""
+    return and_(
+        DeviceConfig.id == row.id,
+        DeviceConfig.claimed_session_id == row.claimed_session_id,
+        DeviceConfig.claim_state == row.claim_state,
+        DeviceConfig.claim_expires_at == row.claim_expires_at,
+    )
+
+
+def _update_claim(row: DeviceConfig, *, values: dict, condition=None) -> DeviceConfig:
+    config_id = row.id
+    predicate = _claim_snapshot(row)
+    if condition is not None:
+        predicate = and_(predicate, condition)
+    with transaction():
+        result = db.session.execute(
+            db.update(DeviceConfig).where(predicate).values(**values),
+            execution_options={"synchronize_session": False},
+        )
+        if result.rowcount != 1:
+            db.session.refresh(row)
+            raise DeviceClaimConflict(config_id, claimed_session_id=row.claimed_session_id)
+    db.session.refresh(row)
+    return row
+
+
 def claim(
     config_id: int,
     session_id: int,
@@ -292,94 +415,84 @@ def claim(
     starting: bool = False,
     lease_seconds: int = STARTING_CLAIM_LEASE_SECONDS,
 ) -> DeviceConfig:
-    """Attach *session_id* to a config, optionally as a leased startup claim."""
-    row = _require(config_id)
-    now = datetime.now(UTC)
-    expiry = row.claim_expires_at
-    if expiry is not None and expiry.tzinfo is None:
-        expiry = expiry.replace(tzinfo=UTC)
-    if row.claim_state is DeviceClaimState.STARTING and expiry is not None and expiry <= now:
-        with transaction():
-            row.claim_state = DeviceClaimState.FREE
-            row.claimed_session_id = None
-            row.claim_expires_at = None
-    if row.claim_state is not DeviceClaimState.FREE:
-        if row.claimed_session_id == session_id:
-            if starting and row.claim_state is DeviceClaimState.STARTING:
-                with transaction():
-                    row.claim_expires_at = now + timedelta(seconds=lease_seconds)
-            return row
-        if not force:
-            raise DeviceClaimConflict(config_id, claimed_session_id=row.claimed_session_id)
-
+    """Atomically acquire a claim; force cannot override unresolved ownership."""
     if lease_seconds <= 0:
         raise ValueError("lease_seconds must be greater than zero")
-
-    with transaction():
-        row.claim_state = DeviceClaimState.STARTING if starting else DeviceClaimState.CLAIMED
-        row.claimed_session_id = session_id
-        row.claim_expires_at = (
-            datetime.now(UTC) + timedelta(seconds=lease_seconds) if starting else None
-        )
-
-    return row
+    row = _require(config_id)
+    now = datetime.now(UTC)
+    condition = None
+    if row.claim_state is not DeviceClaimState.FREE:
+        if row.claimed_session_id == session_id:
+            # Even idempotent calls check the database rather than accepting a
+            # stale identity-map observation as proof of current ownership.
+            expiry = row.claim_expires_at
+            if starting and row.claim_state is DeviceClaimState.STARTING:
+                expiry = now + timedelta(seconds=lease_seconds)
+            return _update_claim(row, values={"claim_expires_at": expiry})
+        expiry = row.claim_expires_at
+        if expiry is not None and expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=UTC)
+        expired = row.claim_state is DeviceClaimState.STARTING and expiry is not None and expiry <= now
+        if not force and not expired:
+            raise DeviceClaimConflict(config_id, claimed_session_id=row.claimed_session_id)
+        condition = _release_is_safe()
+    else:
+        condition = DeviceConfig.claimed_session_id.is_(None)
+    return _update_claim(row, condition=condition, values={
+        "claim_state": DeviceClaimState.STARTING if starting else DeviceClaimState.CLAIMED,
+        "claimed_session_id": session_id,
+        "claim_expires_at": now + timedelta(seconds=lease_seconds) if starting else None,
+    })
 
 
 def activate(config_id: int, session_id: int) -> DeviceConfig:
-    """Promote a valid startup lease to a non-expiring running claim."""
+    """Promote only the named owner's current startup claim."""
     row = _require(config_id)
     if row.claimed_session_id != session_id or row.claim_state not in (
-        DeviceClaimState.STARTING,
-        DeviceClaimState.CLAIMED,
+        DeviceClaimState.STARTING, DeviceClaimState.CLAIMED,
     ):
         raise DeviceClaimConflict(config_id, claimed_session_id=row.claimed_session_id)
-    with transaction():
-        row.claim_state = DeviceClaimState.CLAIMED
-        row.claim_expires_at = None
-    return row
+    return _update_claim(row, values={
+        "claim_state": DeviceClaimState.CLAIMED, "claim_expires_at": None,
+    })
 
 
 def release_expired_starting_claims(*, now: datetime | None = None) -> int:
-    """Release startup claims whose lease elapsed before the host became ready."""
+    """Release expired reservations only when their owner is provably safe."""
     if "claim_expires_at" not in {
         column["name"] for column in inspect(db.engine).get_columns("device_configs")
     }:
-        # A migration command constructs the app before applying its pending
-        # migrations.  Do not make that bootstrap path query a column that is
-        # about to be created.
+        # Migration bootstrap runs before the pending schema is applied.
         return 0
     cutoff = now or datetime.now(UTC)
     with transaction():
-        rows = db.session.scalars(
-            db.select(DeviceConfig).where(
+        result = db.session.execute(
+            db.update(DeviceConfig).where(
                 DeviceConfig.claim_state == DeviceClaimState.STARTING,
                 DeviceConfig.claim_expires_at.is_not(None),
                 DeviceConfig.claim_expires_at <= cutoff,
-            )
-        ).all()
-        for row in rows:
-            row.claim_state = DeviceClaimState.FREE
-            row.claimed_session_id = None
-            row.claim_expires_at = None
-    return len(rows)
+                _release_is_safe(),
+            ).values(claim_state=DeviceClaimState.FREE, claimed_session_id=None, claim_expires_at=None),
+            execution_options={"synchronize_session": False},
+        )
+    return result.rowcount
 
 
-def release(config_id: int) -> DeviceConfig:
-    """Detach any session and move the config back to FREE.
+def release(config_id: int, *, expected_session_id: int | None = None) -> DeviceConfig:
+    """Release a safe owner with an atomic snapshot fence.
 
-    Idempotent: releasing an already-FREE config is a harmless no-op, so teardown
-    and crash-recovery paths can call it blindly.
+    Teardown callers should name their session so a delayed call cannot release
+    a successor's reservation. The legacy no-owner form still fences its read
+    snapshot and refuses active or unresolved runtime ownership.
     """
     row = _require(config_id)
     if row.claim_state is DeviceClaimState.FREE:
         return row
-
-    with transaction():
-        row.claim_state = DeviceClaimState.FREE
-        row.claimed_session_id = None
-        row.claim_expires_at = None
-
-    return row
+    if expected_session_id is not None and row.claimed_session_id != expected_session_id:
+        raise DeviceClaimConflict(config_id, claimed_session_id=row.claimed_session_id)
+    return _update_claim(row, condition=_release_is_safe(), values={
+        "claim_state": DeviceClaimState.FREE, "claimed_session_id": None, "claim_expires_at": None,
+    })
 
 
 __all__ = [

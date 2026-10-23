@@ -1,5 +1,7 @@
 """Persistence round-trip tests for the RuntimeManifest model (Packets 3.4 & 3.5)."""
 
+from types import SimpleNamespace
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 
@@ -10,6 +12,14 @@ from app.models.runtime_manifest import RuntimeManifest
 from app.repositories.sessions import SessionRepository
 from app.runtime_host.manifest import MANIFEST_SCHEMA_VERSION, DeviceFlow, Manifest
 from app.services import device_templates, manifests, session_config
+
+
+@pytest.fixture(autouse=True)
+def enumerated_hardware(monkeypatch):
+    monkeypatch.setattr("serial.tools.list_ports.comports", lambda: [
+        SimpleNamespace(serial_number="002", device="/dev/ttyUSB0"),
+        SimpleNamespace(serial_number="004", device="/dev/ttyUSB1"),
+    ])
 
 
 def _make_manifest() -> Manifest:
@@ -293,3 +303,91 @@ def test_resolve_raises_empty_session(app):
         session = SessionRepository().create({"name": "Empty", "device_flows": []})
         with pytest.raises(EmptySession):
             manifests.resolve(session.id)
+
+
+@pytest.mark.parametrize("old_port,new_port", [
+    ("/dev/ttyUSB0", "/dev/ttyUSB5"), ("COM3", "COM7"),
+])
+def test_start_resolves_renumbered_hardware_and_preserves_history(app, monkeypatch, old_port, new_port):
+    with app.app_context():
+        template = device_templates.create("renumbered-pod", _DEVICE_CONTENT).file_path
+    session_id = _build_session(app, template)
+    ports = [SimpleNamespace(serial_number="002", device=old_port)]
+    monkeypatch.setattr("serial.tools.list_ports.comports", lambda: ports)
+    with app.app_context():
+        old = manifests.resolve(session_id)
+        ports[:] = [SimpleNamespace(serial_number="other", device=old_port),
+                    SimpleNamespace(serial_number="002", device=new_port)]
+        new = manifests.resolve(session_id)
+        assert new.device_flows[0].port == new_port
+        from app.models.device_config import DeviceConfig
+        config = db.session.scalars(db.select(DeviceConfig).where(DeviceConfig.hardware_id == "002")).one()
+        assert config.port == new_port
+        assert new.device_flows[0].device_id == old.device_flows[0].device_id
+        assert new.hash != old.hash
+        row = db.session.scalars(db.select(RuntimeManifest).where(RuntimeManifest.hash == old.hash)).one()
+        historical = Manifest.from_dict(row.content)
+        assert historical.device_flows[0].port == old_port
+        assert historical.hash == old.hash
+
+
+@pytest.mark.parametrize("ports,message", [
+    ([SimpleNamespace(serial_number="other", device="/dev/ttyUSB0")], "No serial port"),
+    ([SimpleNamespace(serial_number="002", device="COM3"),
+      SimpleNamespace(serial_number="002", device="COM7")], "Ambiguous"),
+])
+def test_start_rejects_unresolvable_serial_without_persisting(app, monkeypatch, ports, message):
+    from app.domain.errors import InvalidSessionEntry
+    with app.app_context():
+        template = device_templates.create("missing-pod", _DEVICE_CONTENT).file_path
+    session_id = _build_session(app, template)
+    monkeypatch.setattr("serial.tools.list_ports.comports", lambda: ports)
+    with app.app_context():
+        with pytest.raises(InvalidSessionEntry, match=message):
+            manifests.resolve(session_id)
+        assert db.session.scalars(db.select(RuntimeManifest)).all() == []
+
+
+def test_stop_resolution_does_not_probe_disconnected_hardware(app, monkeypatch):
+    with app.app_context():
+        template = device_templates.create("stopped-pod", _DEVICE_CONTENT).file_path
+    session_id = _build_session(app, template)
+    def forbidden():
+        raise AssertionError("stop must not enumerate hardware")
+    monkeypatch.setattr("serial.tools.list_ports.comports", forbidden)
+    with app.app_context():
+        manifests.resolve(session_id, validate_sink_locations=False)
+
+
+def test_start_d2xx_retains_configured_driver_address(monkeypatch):
+    # Exercise driver routing independently of dashboard template validation.
+    config = SimpleNamespace(hardware_id="002", port="FT002", device_type="pod8206hr",
+                             parameters={"use_d2xx": True}, nickname=None, source_template=None)
+    monkeypatch.setattr(manifests._device_configs, "get_by_id", lambda _: config)
+    monkeypatch.setattr(manifests, "lookup_device", lambda *args: SimpleNamespace(as_dict=lambda: config.parameters))
+    def forbidden():
+        raise AssertionError("D2XX must not enumerate OS serial ports")
+    monkeypatch.setattr("serial.tools.list_ports.comports", forbidden)
+    manifest = manifests._build_manifest(
+        dataflow_id="test", session_name="test", policy="recommend", session_id_for_errors=1,
+        flows=[{"device_config_id": 1, "sinks": [{"sink_name": "plot", "sink_type": "plot"}]}],
+    )
+    assert manifest.device_flows[0].port == "FT002"
+
+
+def test_stop_reuses_original_manifest_after_database_port_refresh(app, monkeypatch):
+    from app.domain.enums import DeviceType
+    from app.services.device_ports import refresh_port
+    with app.app_context():
+        template = device_templates.create("history-pod", _DEVICE_CONTENT).file_path
+    session_id = _build_session(app, template)
+    with app.app_context():
+        original = manifests.resolve(session_id)
+        monkeypatch.setattr("serial.tools.list_ports.comports", lambda: [
+            SimpleNamespace(serial_number="002", device="COM7"),
+        ])
+        refresh_port(DeviceType.POD8206HR, "002")
+        stopped = manifests.resolve(session_id, validate_sink_locations=False)
+        assert stopped.hash == original.hash
+        assert stopped.device_flows[0].port == original.device_flows[0].port
+        assert len(db.session.scalars(db.select(RuntimeManifest)).all()) == 1

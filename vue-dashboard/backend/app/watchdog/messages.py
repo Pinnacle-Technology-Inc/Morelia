@@ -135,6 +135,7 @@ class CommandEnvelope:
     command: str
     correlation: CorrelationEnvelope
     target_device_id: str | None = None
+    stop_reason: str | None = None
 
     def __post_init__(self) -> None:
         if self.command not in WATCHDOG_COMMANDS:
@@ -143,6 +144,10 @@ class CommandEnvelope:
             not isinstance(self.target_device_id, str) or not self.target_device_id
         ):
             raise ValueError("target_device_id must be a non-empty string when provided")
+        if self.stop_reason is not None and (self.command != "stop" or self.stop_reason not in {
+            "user_stop", "duration_ended", "application_shutdown", "runtime_failure"
+        }):
+            raise ValueError("stop_reason must be a supported reason on a stop command")
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable command message."""
@@ -153,6 +158,8 @@ class CommandEnvelope:
         }
         if self.target_device_id is not None:
             values["target_device_id"] = self.target_device_id
+        if self.stop_reason is not None:
+            values["stop_reason"] = self.stop_reason
         return values
 
     @classmethod
@@ -163,6 +170,7 @@ class CommandEnvelope:
             "command",
             "correlation",
             "target_device_id",
+            "stop_reason",
         }
         if unknown_fields:
             names = ", ".join(sorted(unknown_fields))
@@ -183,4 +191,5 @@ class CommandEnvelope:
             command=command,
             correlation=CorrelationEnvelope.from_dict(correlation),
             target_device_id=values.get("target_device_id"),  # type: ignore[arg-type]
+            stop_reason=values.get("stop_reason"),
         )

@@ -20,6 +20,7 @@ from app.database import db
 from app.models.output_file import OutputFile
 from app.output.managed_pvfs_sink import ManagedPvfsSink, ManagedPvfsSinkError
 from app.runtime_child.acknowledged_dataflow import AcknowledgedDataFlow
+from app.runtime_child.acknowledged_monitor import AcknowledgedDataFlowMonitor
 
 _CHANNELS = ["EEG1", "EEG2"]
 _RATE = 10
@@ -151,7 +152,7 @@ def _run_independent_read(path):
         reader.close()
 
 
-def _run_spawned_flow(path, sink_type=ManagedPvfsSink):
+def _run_spawned_flow(path, sink_type=ManagedPvfsSink, *, via_watchdog=False):
     _install_spawn_import_name()
     produced_count = mp.Value("i", 0)
     source = _SpawnedSource(produced_count=produced_count)
@@ -164,13 +165,27 @@ def _run_spawned_flow(path, sink_type=ManagedPvfsSink):
         use_writer_process=True,
     )
     flow = AcknowledgedDataFlow([(source, [sink])])
+    monitor = AcknowledgedDataFlowMonitor(flow) if via_watchdog else None
     try:
         flow.collect()
-        time.sleep(2.0)
-        result = flow.stop_collection(join_timeout_sec=15.0)
+        deadline = time.monotonic() + 30.0
+        while produced_count.value < _RATE + 2 and time.monotonic() < deadline:
+            if flow._workers[0].exitcode is not None:
+                break
+            time.sleep(0.02)
+        assert produced_count.value > 0, "worker never started acquisition"
+        result = (
+            monitor.stop_dataflow(join_timeout_sec=15.0)
+            if monitor is not None
+            else flow.stop_collection(join_timeout_sec=15.0)
+        )
         result["produced_sample_count"] = produced_count.value
         return result
     finally:
+        if any(worker is not None for worker in flow._workers):
+            flow.stop_collection(join_timeout_sec=15.0)
+        if monitor is not None:
+            monitor.close()
         for status_queue in getattr(flow, "_shutdown_status_queues", []):
             close = getattr(status_queue, "close", None)
             if callable(close):
@@ -178,11 +193,12 @@ def _run_spawned_flow(path, sink_type=ManagedPvfsSink):
         flow._workers = []
 
 
-def test_spawned_clean_stop_is_readable_and_leaves_no_working_catalog(tmp_path, app):
+@pytest.mark.parametrize("via_watchdog", [False, True], ids=["dataflow", "watchdog-adapter"])
+def test_spawned_clean_stop_is_readable_and_leaves_no_working_catalog(tmp_path, app, via_watchdog):
     """A clean stop is true only after independent, exact durable readback."""
     path = tmp_path / "packet-32-clean.pvfs"
     with app.app_context():
-        result = _run_spawned_flow(path)
+        result = _run_spawned_flow(path, via_watchdog=via_watchdog)
         output = db.session.scalars(
             db.select(OutputFile).where(OutputFile.path == str(path))
         ).first()
@@ -236,11 +252,14 @@ def test_spawned_clean_stop_is_readable_and_leaves_no_working_catalog(tmp_path, 
     assert not list(tmp_path.glob("*.verify-*.db3"))
 
 
-def test_spawned_verification_failure_is_not_clean_or_successful(tmp_path, app):
+@pytest.mark.parametrize("via_watchdog", [False, True], ids=["dataflow", "watchdog-adapter"])
+def test_spawned_verification_failure_is_not_clean_or_successful(tmp_path, app, via_watchdog):
     """Close/verification failure must surface as failed stop evidence."""
     path = tmp_path / "packet-32-failed.pvfs"
     with app.app_context():
-        result = _run_spawned_flow(path, sink_type=_FailingVerificationPvfsSink)
+        result = _run_spawned_flow(
+            path, sink_type=_FailingVerificationPvfsSink, via_watchdog=via_watchdog,
+        )
         output = db.session.scalars(
             db.select(OutputFile).where(OutputFile.path == str(path))
         ).first()

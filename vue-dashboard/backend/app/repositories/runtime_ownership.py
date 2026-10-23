@@ -76,6 +76,42 @@ class RuntimeOwnershipRepository:
             ).all()
         )
 
+    def list_all(self) -> list[RuntimeOwnership]:
+        """Include stopped producers: their durable outboxes can still be pending."""
+        return list(db.session.scalars(db.select(RuntimeOwnership)).all())
+
+    @staticmethod
+    def _retain_watchdog(row: RuntimeOwnership) -> None:
+        if not row.watchdog_id:
+            return
+        details = dict(row.details or {})
+        history = list(details.get("predecessor_watchdogs") or [])
+        if not any(item.get("watchdog_id") == row.watchdog_id for item in history):
+            history.append({
+                "watchdog_id": row.watchdog_id, "runtime_id": row.runtime_id,
+                "dataflow_id": row.dataflow_id, "manifest_hash": row.manifest_hash,
+                "pid": row.watchdog_pid, "outbox_path": row.watchdog_outbox_path,
+                "exit_details": row.watchdog_exit_details,
+            })
+        details["predecessor_watchdogs"] = history
+        row.details = details
+
+    def retain_predecessors(self, runtime_id: str, predecessors: list[dict]) -> None:
+        with transaction():
+            row = self._required(runtime_id)
+            details = dict(row.details or {})
+            history = list(details.get("predecessor_watchdogs") or [])
+            for item in predecessors:
+                if (item.get("runtime_id") == runtime_id
+                        and item.get("manifest_hash") == row.manifest_hash
+                        and item.get("dataflow_id") == row.dataflow_id
+                        and item.get("watchdog_id")
+                        and not any(old.get("watchdog_id") == item["watchdog_id"] for old in history)):
+                    history.append(dict(item))
+            details["predecessor_watchdogs"] = history
+            row.details = details
+            db.session.flush()
+
     def active_for_dataflow(self, dataflow_id: str) -> RuntimeOwnership | None:
         return db.session.scalars(
             db.select(RuntimeOwnership)
@@ -147,7 +183,7 @@ class RuntimeOwnershipRepository:
             row = self._required(runtime_id)
             row.state = RuntimeOwnershipState.UNCERTAIN
             if details is not None:
-                row.details = dict(details)
+                row.details = {**(row.details or {}), **details}
             db.session.flush()
         return row
 
@@ -195,11 +231,13 @@ class RuntimeOwnershipRepository:
         """
         with transaction():
             row = self._required(runtime_id)
+            if row.watchdog_id != watchdog_id:
+                self._retain_watchdog(row)
             row.watchdog_id = watchdog_id
             row.watchdog_token_hash = token_hash
             row.watchdog_pid = pid
             row.watchdog_control_port = control_port
-            row.watchdog_outbox_path = outbox_path
+            row.watchdog_outbox_path = outbox_path or row.watchdog_outbox_path
             row.watchdog_state = WatchdogProcessState.STARTING
             row.watchdog_last_seen_at = datetime.now(UTC)
             row.watchdog_adopted_at = None
@@ -250,6 +288,7 @@ class RuntimeOwnershipRepository:
         watchdog_id: str,
         pid: int | None = None,
         control_port: int | None = None,
+        outbox_path: str | None = None,
     ) -> RuntimeOwnership:
         """Claim a watchdog process that survived a runtime_host restart.
 
@@ -275,6 +314,7 @@ class RuntimeOwnershipRepository:
             now = datetime.now(UTC)
             row.watchdog_id = watchdog_id
             row.watchdog_pid = pid
+            row.watchdog_outbox_path = outbox_path
             row.watchdog_control_port = control_port
             row.watchdog_state = WatchdogProcessState.ADOPTED
             row.watchdog_adopted_at = now
@@ -366,6 +406,7 @@ class RuntimeOwnershipRepository:
         """Wipe the active watchdog identity, e.g. before a respawn claims a new one."""
         with transaction():
             row = self._required(runtime_id)
+            self._retain_watchdog(row)
             row.watchdog_id = None
             row.watchdog_token_hash = None
             row.watchdog_pid = None

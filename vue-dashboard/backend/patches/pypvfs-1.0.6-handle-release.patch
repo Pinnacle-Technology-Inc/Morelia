@@ -1,0 +1,26 @@
+--- a/pvfs_tools/Core/indexed_data_file.py
++++ b/pvfs_tools/Core/indexed_data_file.py
+@@ -174,6 +174,10 @@
+         Returns:
+             bool: True if successful, False otherwise
+         """
++        # Reopening must release the handles created by the previous create or open.
++        self.close()
++        opened = False
++
+         # Construct filenames
+         index_name = filename + self.INDEX_EXTENSION
+         data_name = filename + self.DATA_EXTENSION
+@@ -197,9 +201,12 @@
+                 return False
+                 
+             self._read_all_indices()
++            opened = True
+             return True
+         finally:
+             pvfs_file.unlock()
++            if not opened:
++                self.close()
+ 
+     def close(self):
+         """Close the indexed data file."""

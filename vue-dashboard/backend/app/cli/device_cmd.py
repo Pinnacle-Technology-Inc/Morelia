@@ -38,7 +38,9 @@ _EXPECTED_VALIDATION_ERRORS = (
     UnknownConfigType,
     ValueError,
 )
-_DEVICE_LIST_HEADERS = ("id", "nickname", "type", "hardware_id", "port", "availability", "status","owner","color")
+_DEVICE_LIST_HEADERS = (
+    "id", "nickname", "type", "hardware_id", "port", "availability", "status", "owner", "color",
+)
 _DEVICE_TEMPLATE_LIST_HEADERS = ("name", "type", "reference", "content_hash")
 _DEVICE_TYPE_ALIASES = {
     "8206": "pod8206hr",
@@ -258,6 +260,39 @@ def edit_config_command(
         exit_with_error(exc)
 
     echo_json(response)
+
+
+@device.command(name="connection")
+@click.argument("config_reference")
+@click.option("--transport", type=click.Choice(["auto", "vcp", "d2xx"]), default=None)
+@click.option("--baudrate", type=click.IntRange(min=1), default=None)
+@click.option("--flow-control", type=click.Choice(["none", "rts_cts"]), default=None)
+@click.option("--read-timeout-ms", type=click.IntRange(min=1), default=None)
+@click.option("--write-timeout-ms", type=click.IntRange(min=1), default=None)
+def connection_command(
+    config_reference: str, transport: str | None, baudrate: int | None,
+    flow_control: str | None, read_timeout_ms: int | None, write_timeout_ms: int | None,
+) -> None:
+    """Show or change a free device's connection without editing its template."""
+    try:
+        client = DaemonClient()
+        config_id = _resolve_device_config_id(client, config_reference)
+        row = client.get(f"/api/v1/device-configs/{config_id}")
+        changes = {
+            key: value for key, value in {
+                "preference": transport, "baudrate": baudrate, "flow_control": flow_control,
+                "read_timeout_ms": read_timeout_ms, "write_timeout_ms": write_timeout_ms,
+            }.items() if value is not None
+        }
+        if changes:
+            from app.domain.connections import normalize_connection
+            connection = normalize_connection({**(row.get("connection") or {}), **changes})
+            row = _patch_daemon(
+                client, f"/api/v1/device-configs/{config_id}", {"connection": connection},
+            )
+        echo_json(row)
+    except (DaemonUnavailable, DaemonError, ValueError) as exc:
+        exit_with_error(exc)
 
 
 @device.command(name="delete")
@@ -650,7 +685,9 @@ def _device_template_library_path(ref: str) -> Path | None:
         normalized_ref = normalized_ref[len(library_dir.name) + 1 :]
     candidates = [library_dir / normalized_ref]
     if Path(normalized_ref).suffix.lower() not in {".toml", ".json"}:
-        candidates.extend((library_dir / f"{normalized_ref}.toml", library_dir / f"{normalized_ref}.json"))
+        candidates.extend((
+            library_dir / f"{normalized_ref}.toml", library_dir / f"{normalized_ref}.json",
+        ))
     for candidate in candidates:
         if candidate.is_file():
             return candidate
@@ -749,7 +786,8 @@ def _find_imported_device_template(
         if isinstance(file_path, str) and Path(file_path.replace("\\", "/")).name == file_name:
             return template
     for template in templates:
-        if template.get("content_hash") == content_hash and template.get("name") == artifact.get("name"):
+        if (template.get("content_hash") == content_hash
+                and template.get("name") == artifact.get("name")):
             return template
     raise ValueError(f"Imported template {file_name!r} was not found in the device template list.")
 
@@ -919,7 +957,7 @@ def _required_string(row: Mapping[str, object], field: str) -> str:
 
 
 def _looks_like_hardware_id(value: str) -> bool:
-    return 1 <= len(value) <= 8 and value.isascii() and value.isalnum()
+    return 1 <= len(value) <= 10 and value.isascii() and value.isalnum()
 
 
 def _emit_or_save_config_template_export(

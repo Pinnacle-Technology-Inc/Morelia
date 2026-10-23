@@ -286,24 +286,21 @@ def test_close_is_idempotent(tmp_path, app):
 def test_native_close_false_marks_writer_failure_and_reports_it(tmp_path, app, monkeypatch):
     """A swallowed pvfs_tools close failure must never look like a clean output."""
 
-    class _FakeIndexedFile:
-        def flush(self, synchronous=True):
-            return None
-
-    class _FalseClosingPvfsData:
-        _indexed_data_files = {"EEG1": _FakeIndexedFile(), "EEG2": _FakeIndexedFile()}
-
-        def flush(self, synchronous=True):
-            return None
-
-        def close(self):
-            return False
-
     failures = []
     path = tmp_path / "close-fails.pvfs"
 
+    start = ManagedPvfsSink._start_in_process
+
     def _start_with_false_closer(sink, claimed_path):
-        sink._pvfs_data = _FalseClosingPvfsData()
+        start(sink, claimed_path)
+        native = sink._legacy_writer._pvfs_data
+        close = native.close
+
+        def close_false():
+            close()
+            return False
+
+        monkeypatch.setattr(native, "close", close_false)
 
     monkeypatch.setattr(ManagedPvfsSink, "_start_in_process", _start_with_false_closer)
 
@@ -321,7 +318,7 @@ def test_native_close_false_marks_writer_failure_and_reports_it(tmp_path, app, m
         with pytest.raises(ManagedPvfsSinkError, match="native close returned false"):
             sink.close()
 
-        assert sink.record.status == "closed"
+        assert sink.record.status == "open"
         assert sink.record.termination_reason == "writer_failure"
         assert sink.record.acquisition_state == "interrupted"
 
@@ -335,31 +332,14 @@ def test_native_close_false_marks_writer_failure_and_reports_it(tmp_path, app, m
 def test_unreadable_embedded_catalog_cannot_be_marked_clean(tmp_path, app, monkeypatch):
     """Native close success is insufficient when the finalized catalog is empty."""
 
-    class _FakeIndexedFile:
-        def flush(self, synchronous=True):
-            return None
-
-    class _TrueClosingPvfsData:
-        _indexed_data_files = {"EEG1": _FakeIndexedFile(), "EEG2": _FakeIndexedFile()}
-
-        def flush(self, synchronous=True):
-            return None
-
-        def close(self):
-            return True
-
     failures = []
     path = tmp_path / "empty-catalog.pvfs"
-
-    def _start_with_true_closer(sink, claimed_path):
-        sink._pvfs_data = _TrueClosingPvfsData()
 
     def _reject_empty_catalog(sink, finalized_path):
         raise ManagedPvfsSinkError(
             "PVFS finalized catalog missing expected channels: EEG1, EEG2"
         )
 
-    monkeypatch.setattr(ManagedPvfsSink, "_start_in_process", _start_with_true_closer)
     monkeypatch.setattr(
         ManagedPvfsSink,
         "_verify_finalized_container",
@@ -420,11 +400,12 @@ def test_get_dict_reconstruction_allocates_continuation_not_reopen(tmp_path, app
             sink.write_frame([float(i), float(i)])
         saved = sink.get_dict()
         seg0_output_id = saved["output_id"]
+        sink.close()
         seg0_bytes = path.read_bytes()
         assert seg0_output_id is not None
         assert saved["use_writer_process"] is False
 
-        # Fresh worker rebuilds from the descriptor (predecessor process gone).
+        # Reconstruction requires release of the previous native owner.
         rebuilt = ManagedPvfsSink(**{**saved, "pod": None})
         rebuilt.open()
         assert rebuilt.record.path == str(cont), "must open a new linked path, not reuse"
@@ -451,6 +432,26 @@ def test_reconstruction_unknown_output_id_raises(tmp_path, app):
             sample_rate=_RATE,
             output_id="00000000-0000-0000-0000-000000000000",
         ).open()
+
+
+def test_reconstruction_refuses_another_devices_component(tmp_path, app):
+    with app.app_context():
+        original = ManagedPvfsSink(
+            path=tmp_path / "device-a.pvfs", dataflow_id=_DF, channels=_CH,
+            sample_rate=_RATE, device_id="device-a", sink_id="shared-name",
+        )
+        original.open()
+        original.write_frame([11, 22])
+        original.close()
+        snapshot = original.get_dict()
+        before = (tmp_path / "device-a.pvfs").read_bytes()
+        other = ManagedPvfsSink(**{**snapshot, "device_id": "device-b"})
+        with pytest.raises(ManagedPvfsSinkError, match="another device"):
+            other.open()
+        with pytest.raises(ManagedPvfsSinkError):
+            other.close()
+        assert OutputFile.query.count() == 1
+        assert (tmp_path / "device-a.pvfs").read_bytes() == before
 
 
 # ---------------------------------------------------------------------------
@@ -519,6 +520,62 @@ def test_writer_process_owned_cleanly_and_produces_readable_output(tmp_path, app
     values = _read_channel(path, "EEG1")
     assert len(values) == 2 * _RATE
     np.testing.assert_allclose(values, np.arange(2 * _RATE), atol=0.1)
+
+
+def test_resource_snapshots_match_real_writer_and_final_count(tmp_path, app, monkeypatch):
+    import json
+    import os
+
+    import psutil
+
+    snapshots = tmp_path / "resource-snapshots"
+    monkeypatch.setenv("MORELIA_DIAGNOSTICS_DIR", str(snapshots))
+    path = tmp_path / "diagnostic-writer.pvfs"
+    with app.app_context():
+        sink = ManagedPvfsSink(
+            path=path, dataflow_id=_DF, channels=_CH, sample_rate=_RATE,
+            use_writer_process=True, device_id="pod:test", sink_id="pod:test:pvfs",
+        )
+        sink.open()
+        reporter = sink._resource_diagnostics
+        assert reporter is not None
+        live = reporter._snapshot()
+        assert live["producer_pid"] == os.getpid()
+        assert live["writer_pid"] == sink._writer_proc.pid
+        assert live["writer_create_time"] == psutil.Process(sink._writer_proc.pid).create_time()
+        for index in range(2 * _RATE):
+            sink.write_frame([float(index), float(index)])
+        sink.close()
+        reporter._thread.join(timeout=3)
+        assert not reporter._thread.is_alive()
+        final = json.loads(next(snapshots.glob("pvfs-*.json")).read_text())
+        assert final["closed"] is True
+        assert final["accepted_frames"] == 2 * _RATE
+        assert final["confirmed_frames"] == 2 * _RATE
+        assert final["pending_confirmation_frames"] == 0
+        assert final["terminal_error"] is None
+    np.testing.assert_allclose(_read_channel(path, "EEG1"), np.arange(2 * _RATE), atol=0.1)
+
+
+def test_unwritable_resource_destination_does_not_fail_recording(tmp_path, app, monkeypatch):
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("keep this file")
+    monkeypatch.setenv("MORELIA_DIAGNOSTICS_DIR", str(blocked))
+    path = tmp_path / "diagnostic-io-failure.pvfs"
+    with app.app_context():
+        sink = ManagedPvfsSink(
+            path=path, dataflow_id=_DF, channels=_CH, sample_rate=_RATE,
+            use_writer_process=True,
+        )
+        sink.open()
+        for index in range(2 * _RATE):
+            sink.write_frame([float(index), float(index)])
+        sink.close()
+        sink._resource_diagnostics._thread.join(timeout=3)
+        assert sink.record.acquisition_state == "complete"
+        assert sink._terminal_error is None
+    assert blocked.read_text() == "keep this file"
+    np.testing.assert_allclose(_read_channel(path, "EEG1"), np.arange(2 * _RATE), atol=0.1)
 
 
 def test_writer_process_requires_and_reports_shutdown_evidence(tmp_path, app):

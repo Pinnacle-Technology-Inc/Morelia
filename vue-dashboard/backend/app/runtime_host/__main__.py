@@ -87,6 +87,8 @@ def _build_driver(
     adopt_watchdog_id: str | None,
     adopt_watchdog_pid: int | None,
     adopt_watchdog_control_port: int | None,
+    watchdog_id: str | None = None,
+    recording_state: dict | None = None,
 ) -> WatchdogProcessDriver:
     """Build runtime_host's own driver: always a ``WatchdogProcessDriver`` (packet 06).
 
@@ -97,6 +99,49 @@ def _build_driver(
     """
     if driver_name != "morelia":
         raise ValueError(f"unknown runtime driver: {driver_name!r}")
+
+    def persist_watchdog_identity(watchdog_id: str, outbox_path: str, **identity) -> None:
+        from app.database import create_database_app, db, transaction
+        from app.models.runtime_ownership import RuntimeOwnership
+        from app.repositories.runtime_ownership import RuntimeOwnershipRepository
+        from app.domain.enums import RuntimeOwnershipState
+        from app.runtime_host.process_evidence import record_process_identity
+        overrides = {"SQLALCHEMY_DATABASE_URI": os.environ["DATABASE_URL"]} if os.environ.get("DATABASE_URL") else None
+        with create_database_app(config_overrides=overrides).app_context():
+            repository = RuntimeOwnershipRepository()
+            host_pid = os.getpid()
+            host_identity = record_process_identity(host_pid)
+            with transaction():
+                # Serialize actual-host registration against the parent registering its launcher.
+                db.session.execute(db.update(RuntimeOwnership).where(
+                    RuntimeOwnership.runtime_id == runtime_id,
+                ).values(pid=RuntimeOwnership.pid))
+                owner = repository.get(runtime_id)
+                if owner is None:
+                    raise RuntimeError("runtime ownership missing before watchdog spawn")
+                db.session.refresh(owner)
+                owner.pid = host_pid
+                owner.details = {**(owner.details or {}),
+                    "host_process_identity": host_identity,
+                    "host_process_identity_source": "runtime_host"}
+                has_stop_intent = any(
+                    isinstance(value, dict) and all(value.get(key) for key in (
+                        "command_id", "requested_at", "stop_reason",
+                    ))
+                    for value in ((owner.details or {}).get("pending_stop_request"),
+                                  (owner.details or {}).get("stop_intent"))
+                )
+                blocked = not identity and (has_stop_intent or owner.state in (
+                    RuntimeOwnershipState.STOPPING, RuntimeOwnershipState.STOPPED,
+                ))
+                if not blocked:
+                    repository.set_watchdog(
+                        runtime_id, watchdog_id=watchdog_id, outbox_path=outbox_path, **identity,
+                    )
+            # Keep the host discoverable even when an accepted Stop prevents worker startup.
+            if blocked:
+                raise RuntimeError("persisted stop intent forbids watchdog spawn")
+
     return WatchdogProcessDriver(
         manifest=manifest,
         manifest_path=manifest_path,
@@ -111,6 +156,9 @@ def _build_driver(
         adopt_watchdog_id=adopt_watchdog_id,
         adopt_watchdog_pid=adopt_watchdog_pid,
         adopt_watchdog_control_port=adopt_watchdog_control_port,
+        watchdog_id=watchdog_id,
+        recording_state=recording_state,
+        before_spawn=persist_watchdog_identity,
     )
 
 
@@ -120,6 +168,8 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=0, help="Bind port (0 = OS picks)")
     parser.add_argument("--token", default=None, help="Per-host auth token")
     parser.add_argument("--runtime-id", default=None, help="Runtime ownership id")
+    parser.add_argument("--watchdog-id", default=None)
+    parser.add_argument("--recording-state", default=None)
     parser.add_argument(
         "--ingest-url",
         default=None,
@@ -213,6 +263,8 @@ def main() -> None:
         adopt_watchdog_id=args.adopt_watchdog_id,
         adopt_watchdog_pid=args.adopt_watchdog_pid,
         adopt_watchdog_control_port=args.adopt_watchdog_control_port,
+        watchdog_id=args.watchdog_id,
+        recording_state=json.loads(args.recording_state) if args.recording_state else None,
     )
     gate = LifecycleSafetyGate(manifest=manifest, driver=driver)
     lease = RuntimeHostLease(timeout_seconds=args.lease_timeout_seconds)

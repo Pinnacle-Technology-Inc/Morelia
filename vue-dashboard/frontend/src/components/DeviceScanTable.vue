@@ -11,7 +11,7 @@
 // isDeviceSelectable() so that reading matches the callers' own gating exactly.
 import { AlertTriangle, Radar } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
-import { isDeviceSelectable } from "../devices-api";
+import { isDeviceSelectable, deviceConnectionLabel } from "../devices-api";
 
 const props = defineProps({
   // Pool rows to display, in the order the caller wants them.
@@ -51,7 +51,7 @@ function configurationAction(device) {
 }
 
 function unavailableMessage(device) {
-  return configurationAction(device) || props.annotate?.(device) || "Unavailable for this stream";
+  return device.connectionError || configurationAction(device) || props.annotate?.(device) || "Unavailable for this stream";
 }
 
 // A disabled row may still offer a repair action: configure scan-only hardware
@@ -88,7 +88,7 @@ function onRow(device) {
              unclaimed hardware, so both read the same on every row, and
              "configured or not" is carried by the checkbox-vs-warning cell. -->
         <thead>
-          <tr><th class="select-col" /><th>Device</th><th>Type</th><th>Hardware ID</th><th>Port</th><th /></tr>
+          <tr><th class="select-col" /><th>Device</th><th>Type</th><th>Hardware ID</th><th>Connection</th><th /></tr>
         </thead>
         <tbody>
           <tr v-if="!devices.length"><td :colspan="COLUMN_COUNT">{{ emptyMessage }}</td></tr>
@@ -128,7 +128,7 @@ function onRow(device) {
             </td>
             <td>{{ device.type }}</td>
             <td><code>{{ device.hardwareId }}</code></td>
-            <td><code>{{ device.port }}</code></td>
+            <td>{{ deviceConnectionLabel(device) }}<br /><code>{{ device.port }}</code></td>
             <td>
               <button
                 v-if="configurationAction(device)"

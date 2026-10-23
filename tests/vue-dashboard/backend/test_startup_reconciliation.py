@@ -210,10 +210,10 @@ def test_unreachable_runtime_with_watchdog_hints_is_deferred_for_host_supervisor
         assert ownership.watchdog_state is WatchdogProcessState.RUNNING
 
 
-def test_dispatched_stop_succeeds_when_stopping_runtime_is_absent():
+def test_dispatched_stop_stays_uncertain_when_stopping_runtime_is_unreachable():
     app = _app()
     with app.app_context():
-        session = _session(status=SessionStatus.ENDING)
+        session = _session(status=SessionStatus.STOPPING)
         operation = _dispatch(_operation("stop", manifest_hash="hash-a"))
         ownerships = RuntimeOwnershipRepository()
         ownerships.create_starting(
@@ -235,12 +235,13 @@ def test_dispatched_stop_succeeds_when_stopping_runtime_is_absent():
         ownership = db.session.scalar(
             db.select(RuntimeOwnership).where(RuntimeOwnership.runtime_id == "rt-stop")
         )
-        assert result.succeeded_operations == 1
-        assert operation.state is OperationState.SUCCEEDED
-        assert session.status is SessionStatus.STOPPED
+        assert result.succeeded_operations == 0
+        assert result.uncertain_operations == 1
+        assert operation.state is OperationState.UNCERTAIN
+        assert session.status is SessionStatus.STOPPING
         assert session.command_in_flight is False
-        assert ownership.state is RuntimeOwnershipState.STOPPED
-        assert ownership.stopped_at is not None
+        assert ownership.state is RuntimeOwnershipState.STOPPING
+        assert ownership.stopped_at is None
 
 
 def test_recovery_succeeds_when_matching_recovery_reports_target_healthy():
@@ -445,12 +446,8 @@ def _claimed_config_session(*, status: SessionStatus, runtime_port: int | None):
     return session, config.id
 
 
-def test_orphan_active_session_without_runtime_port_is_completed_and_released():
-    """A session left ACTIVE with no runtime host gets closed and its device freed.
-
-    Reproduces the daemon-shutdown zombie: status stays ACTIVE with the device
-    still CLAIMED, so the next session that needs it fails DeviceConfigNotFree.
-    """
+def test_active_session_without_runtime_identity_retains_claim_without_proof():
+    """Missing ownership and port do not prove that producers released hardware."""
     from app.domain.enums import DeviceClaimState
     from app.models.device_config import DeviceConfig
 
@@ -464,11 +461,11 @@ def test_orphan_active_session_without_runtime_port_is_completed_and_released():
         result = reconcile_startup(status_probe=lambda port: {})
 
         db.session.refresh(session)
-        assert result.released_orphan_sessions == 1
-        assert session.status is SessionStatus.STOPPED
+        assert result.released_orphan_sessions == 0
+        assert session.status is SessionStatus.ACTIVE
         config = db.session.get(DeviceConfig, config_id)
-        assert config.claim_state is DeviceClaimState.FREE
-        assert config.claimed_session_id is None
+        assert config.claim_state is DeviceClaimState.CLAIMED
+        assert config.claimed_session_id == session.id
 
 
 def test_active_session_with_runtime_port_is_left_for_host_supervisor():

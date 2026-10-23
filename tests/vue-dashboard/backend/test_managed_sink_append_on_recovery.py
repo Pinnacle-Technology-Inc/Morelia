@@ -187,7 +187,7 @@ def test_reconstruction_via_get_dict_appends_at_eof(tmp_path, app):
 
 
 def test_reconstruction_uses_append_mode_not_write(tmp_path, app):
-    """File handle opened during reconstruction must be in append ('ab') mode."""
+    """Validation reads and appending share an append-mode, existing-only handle."""
     path = tmp_path / "data.csv"
     with app.app_context():
         sink = ManagedCsvSink(path=path, dataflow_id=_DF, fieldnames=_FIELDS)
@@ -197,7 +197,7 @@ def test_reconstruction_uses_append_mode_not_write(tmp_path, app):
 
         rebuilt = ManagedCsvSink(**{**saved, "pod": None})
         rebuilt.open()
-        assert rebuilt.managed._handle.mode == "ab", "reconstruction must open in append mode"
+        assert rebuilt.managed._handle.mode == "ab+", "reconstruction must open in append mode"
         rebuilt.close()
 
 
@@ -330,7 +330,7 @@ def test_respawn_without_output_id_resumes_same_file_in_append(tmp_path, app):
         # same dataflow_id, NO output_id — must resume, not die on create.
         respawned = ManagedCsvSink(path=path, dataflow_id=_DF, fieldnames=_FIELDS)
         respawned.open()
-        assert respawned.managed._handle.mode == "ab"
+        assert respawned.managed._handle.mode == "ab+"
         respawned.write_row({"ts": "2", "value": "2.0", "label": "after-crash"})
         respawned.close()
 

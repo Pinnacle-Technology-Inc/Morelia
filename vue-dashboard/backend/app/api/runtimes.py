@@ -30,7 +30,8 @@ def list_runtimes():
 def reconcile_runtimes():
     _require_lifecycle_commands_enabled()
     return reconcile_startup(
-        status_probe=current_app.config["STARTUP_RECONCILIATION_STATUS_PROBE"]
+        status_probe=current_app.config["STARTUP_RECONCILIATION_STATUS_PROBE"],
+        supervisor=current_app.extensions.get("host_supervisor"),
     )
 
 

@@ -19,14 +19,14 @@ from app.domain.enums import (
     SessionStatus,
     WatchdogProcessState,
 )
-from app.models.device_config import DeviceConfig
 from app.models.operation import Operation
 from app.models.runtime_ownership import RuntimeOwnership
 from app.models.session import Session
 from app.repositories.runtime_ownership import (
-    ACTIVE_RUNTIME_STATES,
+    UNRESOLVED_RUNTIME_STATES,
     RuntimeOwnershipRepository,
 )
+from app.runtime_host.process_evidence import ProcessState, probe_process
 from app.services import device_configs
 from app.services.operations import ACTIVE_STATES, transition_operation
 
@@ -63,6 +63,7 @@ class _RuntimeEvidence:
 def reconcile_startup(
     *,
     status_probe: StatusProbe | None = None,
+    supervisor=None,
 ) -> ReconciliationSummary:
     """Resolve persisted interrupted work into succeeded, failed, or uncertain.
 
@@ -70,7 +71,12 @@ def reconcile_startup(
     evidence available after a backend restart.
     """
     probe = status_probe or _probe_status
-    summary = ReconciliationSummary()
+    from app.services.sessions import reconcile_completed_stop_operations
+
+    repaired_stops = reconcile_completed_stop_operations()
+    summary = _reconcile_managed_teardown(
+        ReconciliationSummary(succeeded_operations=repaired_stops), supervisor=supervisor,
+    )
     evidence_by_dataflow: dict[str, _RuntimeEvidence] = {}
 
     released_claims = device_configs.release_expired_starting_claims()
@@ -87,8 +93,6 @@ def reconcile_startup(
 
     for operation in _active_operations():
         summary = _reconcile_operation(summary, operation, evidence_by_dataflow)
-
-    summary = _reconcile_orphan_sessions(summary)
 
     return summary
 
@@ -133,7 +137,7 @@ def _probe_status(port: int) -> Mapping[str, Any]:
 def _active_runtime_ownerships() -> list[RuntimeOwnership]:
     return db.session.scalars(
         db.select(RuntimeOwnership)
-        .where(RuntimeOwnership.state.in_(ACTIVE_RUNTIME_STATES))
+        .where(RuntimeOwnership.state.in_(UNRESOLVED_RUNTIME_STATES))
         .order_by(RuntimeOwnership.started_at.desc(), RuntimeOwnership.id.desc())
     ).all()
 
@@ -146,70 +150,51 @@ def _active_operations() -> list[Operation]:
     ).all()
 
 
-def _orphan_session_candidates() -> list[Session]:
-    """Sessions that could be orphaned managed runtimes.
+def teardown_reconciliation_due(session: Session, ownership: RuntimeOwnership) -> bool:
+    """Select cleanup without cancelling a host still establishing its port."""
+    intent = ownership.details or {}
+    if (session.status == SessionStatus.STOPPING
+            or ownership.state == RuntimeOwnershipState.STOPPING
+            or intent.get("stop_intent") or intent.get("pending_stop_request")):
+        return True
+    if session.runtime_port is not None:
+        return False
+    if (session.status == SessionStatus.STARTING
+            or ownership.state == RuntimeOwnershipState.STARTING):
+        # A daemon crash can leave command_in_flight set forever. A verified
+        # dead recorded host permits attempting Stop, never releasing claims.
+        return probe_process(ownership.pid).state is ProcessState.DEAD
+    return (ownership.state == RuntimeOwnershipState.UNCERTAIN
+            or ownership.watchdog_state == WatchdogProcessState.CRASHED
+            or intent.get("host_launch_failed") is True)
 
-    A NULL ``runtime_port`` keeps this disjoint from ``HostSupervisor.reconcile``,
-    which only rehydrates (adopts/respawns) sessions that still carry a port —
-    so the two reconcilers never fight over the same session. Excluding
-    ``command_in_flight`` avoids racing a live daemon mid-command.
+
+def _reconcile_managed_teardown(summary: ReconciliationSummary, *, supervisor=None) -> ReconciliationSummary:
+    """Project durable positive proof or defer process inspection to the supervisor.
+
+    Missing endpoints and absent active owners never authorize claim release.
+    This also includes managed runs with no claims and no remembered host port.
     """
-    return db.session.scalars(
-        db.select(Session).where(
-            Session.status.in_((SessionStatus.ACTIVE, SessionStatus.STOPPING)),
-            Session.runtime_port.is_(None),
-            Session.command_in_flight == False,  # noqa: E712
-            Session.dataflow_id.isnot(None),
-        )
-    ).all()
+    from app.repositories.sessions import SessionRepository
+    from app.services import sessions
 
-
-def _configs_claimed_by(session_id: int) -> list[DeviceConfig]:
-    return db.session.scalars(
-        db.select(DeviceConfig).where(DeviceConfig.claimed_session_id == session_id)
-    ).all()
-
-
-def _reconcile_orphan_sessions(summary: ReconciliationSummary) -> ReconciliationSummary:
-    """Close orphaned managed sessions and free their leaked device claims.
-
-    A daemon shutdown, or a stop whose runtime was already gone, can leave a
-    session ACTIVE/STOPPING with its device configs still CLAIMED — the claim then
-    outlives the runtime and blocks the next session that needs the device.
-
-    The signal is deliberately narrow to avoid touching a healthy session:
-      * no live runtime owns the dataflow (``active_for_dataflow`` is None), and
-      * the session still holds at least one device-config claim.
-    The claim requirement excludes non-managed ``start()`` sessions (which are
-    legitimately ACTIVE with a NULL port and claim nothing). This runs after the
-    ownership loop above, so a STOPPING host has already settled to STOPPED.
-
-    This is the durable recovery route that makes ``--force`` a convenience
-    rather than the only escape hatch out of a stuck claim.
-    """
     ownerships = RuntimeOwnershipRepository()
-    for session in _orphan_session_candidates():
-        if ownerships.active_for_dataflow(session.dataflow_id) is not None:
-            continue  # a live/pending host owns this dataflow — not orphaned
-        claimed = _configs_claimed_by(session.id)
-        if not claimed:
-            continue  # nothing leaked (e.g. a non-managed session)
-        with transaction():
-            session.status = SessionStatus.COMPLETED
-            session.runtime_port = None
-            session.runtime_token = None
-            session.command_in_flight = False
-        for config in claimed:
-            try:
-                device_configs.release(config.id)
-            except Exception as exc:
-                _log.warning(
-                    "startup reconcile: releasing orphaned device claim failed",
-                    session_id=session.id,
-                    error=type(exc).__name__,
-                    message=str(exc),
-                )
-        summary = _inc(summary, released_orphan_sessions=1)
+    for session in SessionRepository().with_runtime_host_identity():
+        owners = ownerships.list_for_session(session.id)
+        if not owners:
+            continue
+        ownership = owners[0]
+        before = session.status
+        sessions.replay_shutdown_result(session, ownership)
+        if supervisor is not None and session.status != SessionStatus.COMPLETED:
+            unresolved = ownerships.unresolved_for_dataflow(session.dataflow_id) or ownership
+            if teardown_reconciliation_due(session, unresolved):
+                # A latest-owner receipt can be held by an older producer.
+                # Attempt one unresolved identity per pass, honoring the
+                # supervisor's retry scheduling rather than spinning here.
+                supervisor.reconcile_teardown(session, unresolved)
+        if before != SessionStatus.COMPLETED and session.status == SessionStatus.COMPLETED:
+            summary = _inc(summary, stopped_runtimes=1)
     return summary
 
 
@@ -262,6 +247,10 @@ def _reconcile_runtime_ownership(
     evidence: _RuntimeEvidence,
 ) -> ReconciliationSummary:
     ownership = evidence.ownership
+    if ownership.state == RuntimeOwnershipState.STARTING and ownership.port is None:
+        # Readiness publishes the port after launch; a slow startup is not an
+        # orphan. The supervisor separately checks the recorded process identity.
+        return _inc(summary, deferred_runtimes=1)
     if evidence.matches:
         if ownership.state == RuntimeOwnershipState.STOPPING:
             _mark_runtime_uncertain(
@@ -274,8 +263,8 @@ def _reconcile_runtime_ownership(
         return _inc(summary, adopted_runtimes=1)
 
     if ownership.state == RuntimeOwnershipState.STOPPING and evidence.status is None:
-        _mark_runtime_stopped(ownership)
-        return _inc(summary, stopped_runtimes=1)
+        # An unreachable control endpoint says nothing about surviving workers.
+        return _inc(summary, deferred_runtimes=1)
 
     if ownership.state == RuntimeOwnershipState.RECOVERING and evidence.status is None:
         # The HostSupervisor owns evidence collection, authenticated watchdog
@@ -327,6 +316,8 @@ def _reconcile_operation(
     operation: Operation,
     evidence_by_dataflow: dict[str, _RuntimeEvidence],
 ) -> ReconciliationSummary:
+    if operation.command == "stop":
+        return _reconcile_stop_operation(summary, operation)
     if (
         operation.state in {OperationState.QUEUED, OperationState.CLAIMED}
         and operation.dispatched_at is None
@@ -343,8 +334,6 @@ def _reconcile_operation(
     evidence = evidence_by_dataflow.get(operation.dataflow_id)
     if operation.command == "start":
         return _reconcile_start_operation(summary, operation, evidence)
-    if operation.command == "stop":
-        return _reconcile_stop_operation(summary, operation)
     return _reconcile_recovery_operation(summary, operation, evidence)
 
 
@@ -383,16 +372,8 @@ def _reconcile_stop_operation(
     summary: ReconciliationSummary,
     operation: Operation,
 ) -> ReconciliationSummary:
-    ownership = _latest_runtime_ownership(operation.dataflow_id)
-    if ownership is not None and ownership.state == RuntimeOwnershipState.STOPPED:
-        _finish_operation(operation, OperationState.SUCCEEDED)
-        _release_session_lock(
-            operation,
-            status=SessionStatus.COMPLETED,
-            release_device_configs=True,
-        )
-        return _inc(summary, succeeded_operations=1)
-
+    # Positive persisted proof is projected through the fenced reducer before
+    # this pass. A remaining active stop has no completed teardown projection.
     _finish_operation(
         operation,
         OperationState.UNCERTAIN,
@@ -488,7 +469,8 @@ def _release_session_lock(
     for flow in flows:
         if isinstance(flow, Mapping) and flow.get("device_config_id") is not None:
             try:
-                device_configs.release(int(flow["device_config_id"]))
+                if RuntimeOwnershipRepository().unresolved_for_dataflow(operation.dataflow_id) is None:
+                    device_configs.release(int(flow["device_config_id"]), expected_session_id=operation.session_id)
             except Exception as exc:
                 _log.warning(
                     "startup reconcile: releasing device claim for interrupted "
@@ -497,14 +479,6 @@ def _release_session_lock(
                     error=type(exc).__name__,
                     message=str(exc),
                 )
-
-
-def _latest_runtime_ownership(dataflow_id: str) -> RuntimeOwnership | None:
-    return db.session.scalars(
-        db.select(RuntimeOwnership)
-        .where(RuntimeOwnership.dataflow_id == dataflow_id)
-        .order_by(RuntimeOwnership.started_at.desc(), RuntimeOwnership.id.desc())
-    ).first()
 
 
 def _mark_runtime_adopted(
@@ -520,12 +494,6 @@ def _mark_runtime_adopted(
             pid = status.get("pid")
             if isinstance(pid, int) and not isinstance(pid, bool):
                 ownership.pid = pid
-
-
-def _mark_runtime_stopped(ownership: RuntimeOwnership) -> None:
-    with transaction():
-        ownership.state = RuntimeOwnershipState.STOPPED
-        ownership.stopped_at = datetime.now(UTC)
 
 
 def _mark_runtime_uncertain(
@@ -546,7 +514,7 @@ def _mark_runtime_uncertain(
 
     with transaction():
         ownership.state = RuntimeOwnershipState.UNCERTAIN
-        ownership.details = details
+        ownership.details = {**(ownership.details or {}), **details}
 
 
 def _operation_details(evidence: _RuntimeEvidence | None) -> dict[str, Any]:

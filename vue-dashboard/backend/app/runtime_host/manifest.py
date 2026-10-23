@@ -1,39 +1,11 @@
-"""Immutable runtime manifest — one Dataflow Runtime Host runs one dataflow.
+"""Saved configuration for one dataflow and its ordered device and sink settings.
 
-Constructed once at host startup, never changed. The content hash lets the
-control plane confirm it is talking to the right host after a daemon restart
-without re-reading a manifest file from disk (the file is loaded into a
-Manifest object in memory instead).
+The control plane uses the content hash to match a runtime to its saved
+configuration after a restart. Credentials are referenced by environment
+variable name, such as ``api_token_env``.
 
-Schema v2 (packet 06)
----------------------
-A device flow no longer carries a single flattened ``{sink_type, sink_location}``
-pair. Instead it owns an ordered collection of fully-resolved ``SinkConfig``
-descriptors (``DeviceFlow.sinks``), and the manifest carries a durable, nullable
-session identity so output segments and recovery gaps can be linked to their
-session. The wire form is pure v2 — it never contains ``sink_type`` or
-``sink_location`` keys.
-
-Backward compatibility
-----------------------
-* ``Manifest.from_dict`` still reads persisted **v1** documents
-  (``schema_version == "1"``) by translating each ``{sink_type, sink_location}``
-  pair into a one-element file ``SinkConfig`` collection. It never re-emits v1:
-  the object it returns is a native v2 manifest. Adoption/respawn reuse
-  persisted manifests, so v1 reading is release-critical.
-* ``DeviceFlow`` still accepts legacy ``sink_type=`` / ``sink_location=``
-  construction keywords (translating them to a single file sink) and still
-  exposes ``.sink_type`` / ``.sink_location`` read properties. These are a
-  compatibility bridge for callers that have not yet migrated to ``.sinks``
-  (e.g. ``app/runtime_child/morelia.py``, ``app/services/manifests.py``). A
-  later packet migrates those readers/writers to native ``.sinks`` and can then
-  drop the bridge.
-
-Secrets / live objects never enter a manifest. Sink parameters are validated
-against the sink registry (packet 01) on the way in, which rejects unknown
-keys; a dedicated guard additionally rejects raw-secret-looking parameter names
-(e.g. an Influx token) — the registry only ever accepts an env-var *name*
-(``api_token_env``), never a token value.
+Only schema v3 is supported. It stores ordered sinks, an optional session ID,
+duration, and resolved device connections.
 """
 
 from __future__ import annotations
@@ -42,19 +14,15 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import ClassVar
 
+from app.domain.duration import validate_duration_seconds
 from app.domain.enums import PolicyMode, SinkType
 
-# New manifests are always written at v2. The reader additionally accepts v1
-# documents (translating them), but never emits them.
-MANIFEST_SCHEMA_VERSION = "2"
-_LEGACY_SCHEMA_VERSION = "1"
+MANIFEST_SCHEMA_VERSION = "3"
 
-# Parameter names that would only ever hold a resolved secret value. A manifest
-# is secret-free by contract, so these are rejected outright rather than passed
-# through — the registry models credentials as an env-var *reference*
-# (``api_token_env``), never the value.
+# Reject credential values so saved manifests contain only credential references.
 _RAW_SECRET_PARAM_KEYS = frozenset(
     {
         "api_token",
@@ -84,20 +52,17 @@ def _reject_secret_params(parameters: Mapping[str, object], sink_id: str) -> Non
 def _canonical_sink_parameters(
     sink_type: SinkType, parameters: Mapping[str, object]
 ) -> dict[str, object]:
-    """Validate + canonicalize sink parameters through the packet-01 registry.
+    """Normalize validated sink parameters so equivalent settings hash alike.
 
-    Rejects unknown/secret keys and coerces scalars so equal inputs canonicalize
-    identically (feeds hash stability). Returns a plain dict. Pure validation —
-    it never resolves credentials, allocates paths, or constructs a live sink.
+    Validation does not resolve credentials, allocate paths, or open a sink.
     """
-    # Lazy import keeps this module importable without eagerly pulling the
-    # services layer, and sidesteps any import-order coupling.
+    # Defer loading the services layer until parameters need validation.
     from app.services.registry import lookup_sink
 
     spec = lookup_sink(sink_type.value, parameters)
     canonical = spec.as_dict()
 
-    # No live objects/handles: a manifest field must be JSON-serializable.
+    # Saved manifests must serialize without live objects or handles.
     try:
         json.dumps(canonical, separators=(",", ":"))
     except (TypeError, ValueError):
@@ -110,12 +75,9 @@ def _canonical_sink_parameters(
 
 @dataclass(frozen=True, slots=True)
 class SinkConfig:
-    """One fully-resolved sink descriptor for a source.
+    """Sink identity and validated settings for one source.
 
-    Immutable, JSON-serializable, secret-free, and canonically hashed. ``type``
-    is a ``SinkType``; ``parameters`` is the canonical, registry-validated
-    parameter map (for file sinks it contains the resolved absolute
-    ``file_path``).
+    File sinks use ``file_path``; credential settings use environment variable names.
     """
 
     sink_id: str
@@ -126,9 +88,7 @@ class SinkConfig:
     _REQUIRED: ClassVar[frozenset[str]] = frozenset({"sink_id", "name", "type", "parameters"})
 
     def __hash__(self) -> int:
-        # dict field prevents the frozen-dataclass auto __hash__; derive from the
-        # canonical wire form so equal content = equal hash regardless of dict
-        # construction order.
+        # Parameter insertion order must not change the hash of equivalent settings.
         return hash(json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":")))
 
     def __post_init__(self) -> None:
@@ -143,8 +103,6 @@ class SinkConfig:
 
         _reject_secret_params(self.parameters, self.sink_id)
         canonical = _canonical_sink_parameters(self.type, self.parameters)
-        # Bypass the frozen guard — standard pattern for a computed/normalized
-        # field on a frozen dataclass; __post_init__ runs inside __init__.
         object.__setattr__(self, "parameters", canonical)
 
     def to_dict(self) -> dict[str, object]:
@@ -182,12 +140,10 @@ class SinkConfig:
         )
 
 
-def _sink_from_v1(device_id: str, sink_type: object, sink_location: object) -> SinkConfig:
-    """Translate a v1 ``{sink_type, sink_location}`` pair to one file SinkConfig.
+def _single_file_sink(device_id: str, sink_type: object, sink_location: object) -> SinkConfig:
+    """Read legacy file-sink settings as a single sink.
 
-    v1 only ever modeled file-category sinks with a path. A non-file sink type
-    has no ``file_path`` slot in the registry, so the registry rejects the
-    translation with a clear error rather than mis-modeling it.
+    The registry rejects sink types that do not accept ``file_path``.
     """
     if isinstance(sink_type, SinkType):
         resolved_type = sink_type
@@ -210,13 +166,10 @@ def _sink_from_v1(device_id: str, sink_type: object, sink_location: object) -> S
 
 @dataclass(frozen=True, slots=True, init=False)
 class DeviceFlow:
-    """One device, its hardware binding, snapshotted parameters, and ordered sinks.
+    """Device identity, saved parameters, and at least one ordered sink.
 
-    v2 owns ``sinks: tuple[SinkConfig, ...]`` (at least one, with per-source
-    unique sink IDs and names). A legacy ``sink_type`` + ``sink_location`` pair
-    may still be supplied at construction — it is translated to a single file
-    sink — and ``.sink_type`` / ``.sink_location`` remain available as read
-    properties for callers not yet migrated to ``.sinks``.
+    Sink IDs and names must be unique within the device. Legacy callers may
+    supply ``sink_type`` and ``sink_location`` to configure one file sink.
     """
 
     device_id: str
@@ -226,29 +179,14 @@ class DeviceFlow:
     port: str
     parameters: dict[str, object]
     sinks: tuple[SinkConfig, ...]
+    connection: dict[str, object] | None
 
-    _V2_KNOWN: ClassVar[frozenset[str]] = frozenset(
-        {"device_id", "name", "nickname", "hardware_id", "port", "parameters", "sinks"}
+    _KNOWN: ClassVar[frozenset[str]] = frozenset(
+        {"device_id", "name", "nickname", "hardware_id", "port", "parameters", "sinks", "connection"}
     )
-    _V2_REQUIRED: ClassVar[frozenset[str]] = frozenset(
+    _REQUIRED: ClassVar[frozenset[str]] = frozenset(
         {"device_id", "name", "hardware_id", "port", "parameters", "sinks"}
     )
-    _V1_KNOWN: ClassVar[frozenset[str]] = frozenset(
-        {
-            "device_id",
-            "name",
-            "nickname",
-            "hardware_id",
-            "port",
-            "parameters",
-            "sink_type",
-            "sink_location",
-        }
-    )
-    _V1_REQUIRED: ClassVar[frozenset[str]] = frozenset(
-        {"device_id", "name", "hardware_id", "port", "parameters", "sink_type", "sink_location"}
-    )
-
     def __init__(
         self,
         *,
@@ -261,6 +199,7 @@ class DeviceFlow:
         sinks: tuple[SinkConfig, ...] | list[SinkConfig] | None = None,
         sink_type: object = None,
         sink_location: object = None,
+        connection: Mapping[str, object] | None = None,
     ) -> None:
         object.__setattr__(self, "device_id", device_id)
         object.__setattr__(self, "name", name)
@@ -268,11 +207,14 @@ class DeviceFlow:
         object.__setattr__(self, "hardware_id", hardware_id)
         object.__setattr__(self, "port", port)
         object.__setattr__(self, "parameters", dict(parameters) if isinstance(parameters, Mapping) else parameters)
+        from app.domain.connections import normalize_resolved_connection
+        object.__setattr__(self, "connection", normalize_resolved_connection(connection, hardware_id=hardware_id)
+                           if connection is not None else None)
 
         if sinks is not None:
             if sink_type is not None or sink_location is not None:
                 raise ValueError(
-                    "device flow cannot mix v2 'sinks' with legacy 'sink_type'/'sink_location'"
+                    "device flow cannot mix 'sinks' with legacy 'sink_type'/'sink_location'"
                 )
             resolved_sinks = tuple(sinks)
         else:
@@ -280,7 +222,7 @@ class DeviceFlow:
                 raise ValueError(
                     "device flow requires 'sinks' (or legacy 'sink_type' + 'sink_location')"
                 )
-            resolved_sinks = (_sink_from_v1(device_id, sink_type, sink_location),)
+            resolved_sinks = (_single_file_sink(device_id, sink_type, sink_location),)
 
         object.__setattr__(self, "sinks", resolved_sinks)
         self._validate()
@@ -288,15 +230,14 @@ class DeviceFlow:
     def __hash__(self) -> int:
         return hash(json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":")))
 
-    # -- compatibility bridge: single-sink read accessors ---------------------
     @property
     def sink_type(self) -> SinkType:
-        """First sink's type. Bridge for pre-v2 readers (one sink per flow)."""
+        """Expose the first sink's type for legacy single-sink callers."""
         return self.sinks[0].type
 
     @property
     def sink_location(self) -> str | None:
-        """First sink's resolved file path, if any. Bridge for pre-v2 readers."""
+        """Expose the first sink's file path, if any, for legacy callers."""
         return self.sinks[0].parameters.get("file_path")  # type: ignore[return-value]
 
     def _validate(self) -> None:
@@ -329,7 +270,7 @@ class DeviceFlow:
             seen_names.add(sink.name)
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload = {
             "device_id": self.device_id,
             "name": self.name,
             "nickname": self.nickname,
@@ -338,53 +279,26 @@ class DeviceFlow:
             "parameters": self.parameters,
             "sinks": [sink.to_dict() for sink in self.sinks],
         }
+        if self.connection is not None:
+            payload["connection"] = dict(self.connection)
+        return payload
 
     @classmethod
     def from_dict(cls, values: Mapping[str, object]) -> DeviceFlow:
         keys = set(values)
-        has_v2 = "sinks" in keys
-        has_v1 = "sink_type" in keys or "sink_location" in keys
-        if has_v2 and has_v1:
-            raise ValueError(
-                "device flow cannot mix v2 'sinks' with legacy 'sink_type'/'sink_location'"
-            )
-
-        if has_v2:
-            unknown = keys - cls._V2_KNOWN
-            if unknown:
-                raise ValueError(f"unknown device flow fields: {', '.join(sorted(unknown))}")
-            missing = cls._V2_REQUIRED - keys
-            if missing:
-                raise ValueError(f"missing device flow fields: {', '.join(sorted(missing))}")
-
-            params_raw = values["parameters"]
-            if not isinstance(params_raw, Mapping):
-                raise ValueError("parameters must be a mapping")
-            sinks_raw = values["sinks"]
-            if not isinstance(sinks_raw, (list, tuple)):
-                raise ValueError("sinks must be a list")
-
-            return cls(
-                device_id=values["device_id"],  # type: ignore[arg-type]
-                name=values["name"],  # type: ignore[arg-type]
-                nickname=values.get("nickname"),  # type: ignore[arg-type]
-                hardware_id=values["hardware_id"],  # type: ignore[arg-type]
-                port=values["port"],  # type: ignore[arg-type]
-                parameters=dict(params_raw),
-                sinks=tuple(SinkConfig.from_dict(s) for s in sinks_raw),  # type: ignore[arg-type]
-            )
-
-        # v1 translation path
-        unknown = keys - cls._V1_KNOWN
+        unknown = keys - cls._KNOWN
         if unknown:
             raise ValueError(f"unknown device flow fields: {', '.join(sorted(unknown))}")
-        missing = cls._V1_REQUIRED - keys
+        missing = cls._REQUIRED - keys
         if missing:
             raise ValueError(f"missing device flow fields: {', '.join(sorted(missing))}")
 
         params_raw = values["parameters"]
         if not isinstance(params_raw, Mapping):
             raise ValueError("parameters must be a mapping")
+        sinks_raw = values["sinks"]
+        if not isinstance(sinks_raw, (list, tuple)):
+            raise ValueError("sinks must be a list")
 
         return cls(
             device_id=values["device_id"],  # type: ignore[arg-type]
@@ -393,8 +307,8 @@ class DeviceFlow:
             hardware_id=values["hardware_id"],  # type: ignore[arg-type]
             port=values["port"],  # type: ignore[arg-type]
             parameters=dict(params_raw),
-            sink_type=values["sink_type"],
-            sink_location=values["sink_location"],
+            sinks=tuple(SinkConfig.from_dict(s) for s in sinks_raw),  # type: ignore[arg-type]
+            connection=values.get("connection"),
         )
 
 
@@ -404,12 +318,11 @@ def _content_hash(
     session_id: int | None,
     device_flows: tuple[DeviceFlow, ...],
     policy: PolicyMode,
+    duration_seconds: int | None = None,
 ) -> str:
-    """SHA-256 of the canonical JSON of the manifest's stable fields (no hash field).
+    """Hash the saved settings, excluding the hash field itself.
 
-    ``sort_keys`` canonicalizes dict *key* order but preserves list order, so
-    the ordered sink and device-flow collections stay significant while
-    incidental dict construction order does not affect the hash.
+    Device and sink order affect the hash; dictionary key order does not.
     """
     payload = {
         "schema_version": schema_version,
@@ -418,38 +331,18 @@ def _content_hash(
         "policy": policy.value,
         "device_flows": [df.to_dict() for df in device_flows],
     }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode()).hexdigest()
-
-
-def _v1_stored_hash(values: Mapping[str, object]) -> str:
-    """Recompute the original v1 content hash from a raw v1 wire document.
-
-    Used to preserve strict stored-hash validation when reading (and
-    translating) a persisted v1 manifest: the integrity check runs against the
-    v1 payload the v1 writer hashed, even though the object we return is v2.
-    """
-    payload = {
-        "schema_version": values["schema_version"],
-        "dataflow_id": values["dataflow_id"],
-        "policy": values["policy"],
-        "device_flows": values["device_flows"],
-    }
+    payload["duration_seconds"] = duration_seconds
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
 class Manifest:
-    """A frozen description of one Dataflow Runtime Host's dataflow and device→sink topology.
+    """Saved settings used to launch or recover one dataflow.
 
-    ``schema_version`` gates incompatible wire-format changes.
-    ``session_id`` is the durable session identity used to associate output
-    segments and recovery gaps with their session; it is ``None`` for
-    side-effect-free previews and required (populated by the resolver) for
-    persisted runtime manifests.
-    ``hash`` is the unique ID to identify the host and dataflow relationship;
-    it covers the entire ordered sink collection and the session identity.
+    ``session_id`` links output segments and recovery gaps to a session; previews
+    omit it. ``hash`` identifies the configuration, including device and sink
+    order, session ID, and duration.
     """
 
     schema_version: str
@@ -457,18 +350,13 @@ class Manifest:
     policy: PolicyMode
     device_flows: tuple[DeviceFlow, ...]
     session_id: int | None = None
+    duration_seconds: int | None = None
     hash: str = field(init=False)
 
-    _V2_KNOWN: ClassVar[frozenset[str]] = frozenset(
-        {"schema_version", "dataflow_id", "policy", "device_flows", "session_id", "hash"}
+    _KNOWN: ClassVar[frozenset[str]] = frozenset(
+        {"schema_version", "dataflow_id", "policy", "device_flows", "session_id", "duration_seconds", "hash"}
     )
-    _V2_REQUIRED: ClassVar[frozenset[str]] = frozenset(
-        {"schema_version", "dataflow_id", "policy", "device_flows"}
-    )
-    _V1_KNOWN: ClassVar[frozenset[str]] = frozenset(
-        {"schema_version", "dataflow_id", "policy", "device_flows", "hash"}
-    )
-    _V1_REQUIRED: ClassVar[frozenset[str]] = frozenset(
+    _REQUIRED: ClassVar[frozenset[str]] = frozenset(
         {"schema_version", "dataflow_id", "policy", "device_flows"}
     )
 
@@ -478,6 +366,12 @@ class Manifest:
     def __post_init__(self) -> None:
         if not isinstance(self.schema_version, str) or not self.schema_version:
             raise ValueError("schema_version must be a non-empty string")
+        if self.schema_version != MANIFEST_SCHEMA_VERSION:
+            raise ValueError("unsupported manifest schema version")
+        if self.duration_seconds is not None:
+            # Keep saved manifests readable regardless of today's date.
+            # The runtime checks the deadline against the first sample's arrival time.
+            validate_duration_seconds(self.duration_seconds, start_at=datetime.min.replace(tzinfo=UTC))
         if not isinstance(self.dataflow_id, str) or not self.dataflow_id:
             raise ValueError("dataflow_id must be a non-empty string")
         if not isinstance(self.policy, PolicyMode):
@@ -495,7 +389,7 @@ class Manifest:
                 raise ValueError(f"duplicate device_id in manifest: {df.device_id!r}")
             seen_devices.add(df.device_id)
 
-        # Globally-unique file locations across every sink of every device.
+        # Two sinks must not write to the same file, even on different devices.
         seen_locations: set[str] = set()
         for df in self.device_flows:
             for sink in df.sinks:
@@ -508,8 +402,6 @@ class Manifest:
                     )
                 seen_locations.add(location)  # type: ignore[arg-type]
 
-        # Bypass the frozen guard — this is the standard pattern for computed
-        # fields on frozen dataclasses; __post_init__ runs inside __init__.
         object.__setattr__(
             self,
             "hash",
@@ -519,11 +411,12 @@ class Manifest:
                 self.session_id,
                 self.device_flows,
                 self.policy,
+                self.duration_seconds,
             ),
         )
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload = {
             "schema_version": self.schema_version,
             "dataflow_id": self.dataflow_id,
             "policy": self.policy.value,
@@ -531,22 +424,18 @@ class Manifest:
             "device_flows": [df.to_dict() for df in self.device_flows],
             "hash": self.hash,
         }
+        payload["duration_seconds"] = self.duration_seconds
+        return payload
 
     @classmethod
     def from_dict(cls, values: Mapping[str, object]) -> Manifest:
         schema_version = values.get("schema_version")
-        if schema_version == MANIFEST_SCHEMA_VERSION:
-            return cls._from_v2(values)
-        if schema_version == _LEGACY_SCHEMA_VERSION:
-            return cls._from_v1(values)
-        raise ValueError(f"unsupported manifest schema version: {schema_version!r}")
-
-    @classmethod
-    def _from_v2(cls, values: Mapping[str, object]) -> Manifest:
-        unknown = set(values) - cls._V2_KNOWN
+        if schema_version != MANIFEST_SCHEMA_VERSION:
+            raise ValueError(f"unsupported manifest schema version: {schema_version!r}")
+        unknown = set(values) - cls._KNOWN
         if unknown:
             raise ValueError(f"unknown manifest fields: {', '.join(sorted(unknown))}")
-        missing = cls._V2_REQUIRED - set(values)
+        missing = cls._REQUIRED - set(values)
         if missing:
             raise ValueError(f"missing manifest fields: {', '.join(sorted(missing))}")
 
@@ -556,47 +445,18 @@ class Manifest:
             raise ValueError("device_flows must be a list")
 
         manifest = cls(
-            schema_version=MANIFEST_SCHEMA_VERSION,
+            schema_version=values["schema_version"],
             dataflow_id=values["dataflow_id"],  # type: ignore[arg-type]
             policy=policy,
             device_flows=tuple(DeviceFlow.from_dict(df) for df in device_flows_raw),  # type: ignore[arg-type]
             session_id=values.get("session_id"),  # type: ignore[arg-type]
+            duration_seconds=values.get("duration_seconds"),
         )
 
         stored_hash = values.get("hash")
         if stored_hash is not None and stored_hash != manifest.hash:
             raise ValueError("manifest hash mismatch — content may have been tampered with")
         return manifest
-
-    @classmethod
-    def _from_v1(cls, values: Mapping[str, object]) -> Manifest:
-        unknown = set(values) - cls._V1_KNOWN
-        if unknown:
-            raise ValueError(f"unknown manifest fields: {', '.join(sorted(unknown))}")
-        missing = cls._V1_REQUIRED - set(values)
-        if missing:
-            raise ValueError(f"missing manifest fields: {', '.join(sorted(missing))}")
-
-        # Validate the stored hash against the *v1* payload before translating —
-        # strict integrity check on the document as it was written.
-        stored_hash = values.get("hash")
-        if stored_hash is not None and stored_hash != _v1_stored_hash(values):
-            raise ValueError("manifest hash mismatch — content may have been tampered with")
-
-        policy = cls._resolve_policy(values["policy"])
-        device_flows_raw = values["device_flows"]
-        if not isinstance(device_flows_raw, (list, tuple)):
-            raise ValueError("device_flows must be a list")
-
-        # Emit v2, never v1: the translated flows carry one file SinkConfig each
-        # and the manifest is stamped at the current (v2) schema version.
-        return cls(
-            schema_version=MANIFEST_SCHEMA_VERSION,
-            dataflow_id=values["dataflow_id"],  # type: ignore[arg-type]
-            policy=policy,
-            device_flows=tuple(DeviceFlow.from_dict(df) for df in device_flows_raw),  # type: ignore[arg-type]
-            session_id=None,
-        )
 
     @staticmethod
     def _resolve_policy(policy_raw: object) -> PolicyMode:

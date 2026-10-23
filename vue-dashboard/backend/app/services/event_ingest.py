@@ -9,15 +9,140 @@ Details are in the implementation
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
+import math
 
 from app.config import get_config
+from app.database import db, transaction
 from app.contracts.watchdog_process_protocol import WatchdogTelemetryEnvelope
+from app.domain.duration import validate_duration_seconds
 from app.domain.errors import StaleWatchdogReport, UnknownDataflow
+from app.models.backend_event import BackendEvent
 from app.repositories.backend_events import BackendEventRepository
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
 from app.runtime_child.driver import RuntimePhase, RuntimeReport
 from app.services import gaps, incidents, operations
+
+LIFECYCLE_EVENTS = frozenset({
+    "runtime.acquisition_started",
+    "runtime.recording_started", "runtime.recording_progress",
+    "runtime.stop_requested", "runtime.stop_finished",
+})
+
+
+def _utc_timestamp(value, name):
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be an ISO UTC timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"{name} must be an ISO UTC timestamp") from None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{name} must include a timezone")
+    return parsed.astimezone(UTC)
+
+
+def _validate_lifecycle(envelope):
+    """Validate evidence before inserting an event or projecting any state."""
+    payload = envelope.payload
+    for field in ("started_at", "ended_at"):
+        if payload.get(field) is not None:
+            _utc_timestamp(payload[field], field)
+    bounds = payload.get("recording_bounds", [])
+    if not isinstance(bounds, list):
+        raise ValueError("recording_bounds must be a list")
+    for bound in bounds:
+        if not isinstance(bound, Mapping) or any(
+            not isinstance(bound.get(key), str) or not bound[key]
+            for key in ("source_id", "sink_id")
+        ):
+            raise ValueError("recording bounds require source_id and sink_id")
+        first = _utc_timestamp(bound.get("first_sample_at"), "first_sample_at")
+        last = _utc_timestamp(bound.get("last_sample_at"), "last_sample_at")
+        if last < first:
+            raise ValueError("last sample precedes first sample")
+    anchor = payload.get("clock_anchor")
+    if anchor is not None:
+        if not isinstance(anchor, Mapping) or not isinstance(anchor.get("boot_id"), str):
+            raise ValueError("invalid clock_anchor")
+        deadline = anchor.get("deadline_elapsed")
+        if type(deadline) not in (int, float) or not math.isfinite(deadline):
+            raise ValueError("invalid elapsed deadline")
+    if envelope.event_type == "runtime.acquisition_started":
+        _utc_timestamp(payload.get("started_at"), "started_at")
+        if anchor is None:
+            raise ValueError("acquisition evidence requires clock_anchor")
+    elif envelope.event_type.startswith("runtime.recording_"):
+        _utc_timestamp(payload.get("started_at"), "started_at")
+        if not bounds:
+            raise ValueError("recording evidence requires acknowledged sample bounds")
+    else:
+        if not isinstance(payload.get("command_id"), str) or not payload["command_id"]:
+            raise ValueError("stop event requires command_id")
+        if payload.get("stop_reason") not in {
+            "user_stop", "duration_ended", "application_shutdown", "runtime_failure"
+        }:
+            raise ValueError("invalid stop_reason")
+        _utc_timestamp(payload.get("requested_at"), "requested_at")
+        if envelope.event_type == "runtime.stop_finished":
+            if not isinstance(payload.get("shutdown_result"), Mapping):
+                raise ValueError("stop_finished requires structured shutdown_result")
+            for field in ("teardown_confirmed", "output_integrity_confirmed"):
+                if type(payload.get(field)) is not bool:
+                    raise ValueError(f"stop_finished requires boolean {field}")
+            if payload["output_integrity_confirmed"] and not payload["teardown_confirmed"]:
+                raise ValueError("output integrity requires teardown evidence")
+
+
+def _project_recording(session, ownership, payload, *, current_producer=True):
+    """Keep the first HealthSink arrival as session start and merge saved bounds."""
+    from app.models.session import Session
+    started = payload.get("started_at")
+    bounds = payload.get("recording_bounds", [])
+    if started is not None:
+        origin = _utc_timestamp(started, "started_at")
+        if session.duration_seconds is not None:
+            validate_duration_seconds(session.duration_seconds, start_at=origin)
+        db.session.execute(db.update(Session).where(
+            Session.id == session.id, Session.started_at.is_(None)
+        ).values(started_at=origin).execution_options(synchronize_session="fetch"))
+    if bounds:
+        latest = max(_utc_timestamp(b["last_sample_at"], "last_sample_at") for b in bounds)
+        db.session.execute(db.update(Session).where(
+            Session.id == session.id, db.or_(Session.ended_at.is_(None), Session.ended_at < latest)
+        ).values(ended_at=latest).execution_options(synchronize_session="fetch"))
+    details = dict(ownership.details or {})
+    previous = dict(details.get("recording_state") or {})
+    # Preserve the established anchor even when old outbox checkpoints arrive late.
+    if not previous.get("started_at") and started:
+        previous["started_at"] = started
+        if payload.get("clock_anchor") is not None:
+            previous["clock_anchor"] = dict(payload["clock_anchor"])
+    elif (current_producer and started == previous.get("started_at")
+          and payload.get("clock_anchor") is not None):
+        saved_anchor = previous.get("clock_anchor") or {}
+        incoming_anchor = payload["clock_anchor"]
+        if saved_anchor.get("boot_id") != incoming_anchor.get("boot_id"):
+            # A replacement persists its confirmed-reboot reconstruction before
+            # recording. Historical outboxes cannot roll this anchor backward.
+            previous["clock_anchor"] = dict(incoming_anchor)
+    merged = {(b["source_id"], b["sink_id"]): dict(b) for b in previous.get("recording_bounds", [])}
+    for bound in bounds:
+        key = (bound["source_id"], bound["sink_id"])
+        old = merged.get(key)
+        if old is None:
+            merged[key] = dict(bound)
+        else:
+            old["first_sample_at"] = min(_utc_timestamp(old["first_sample_at"], "first"),
+                _utc_timestamp(bound["first_sample_at"], "first")).isoformat()
+            old["last_sample_at"] = max(_utc_timestamp(old["last_sample_at"], "last"),
+                _utc_timestamp(bound["last_sample_at"], "last")).isoformat()
+    previous["recording_bounds"] = list(merged.values())
+    last = max((_utc_timestamp(b["last_sample_at"], "last") for b in merged.values()), default=None)
+    previous["ended_at"] = last.isoformat() if last else None
+    details["recording_state"] = previous
+    ownership.details = details
 
 
 def ingest_report(raw: Mapping) -> int:
@@ -120,9 +245,17 @@ def ingest_watchdog_report(raw: Mapping) -> int:
     # Step 2: active identity lookup — an untracked runtime_id has no active watchdog
     ownership = RuntimeOwnershipRepository().get(envelope.runtime_id)
     active_watchdog_id = ownership.watchdog_id if ownership is not None else None
+    lifecycle = envelope.event_type in LIFECYCLE_EVENTS
+    historical = bool(lifecycle and ownership is not None and any(
+        ref.get("watchdog_id") == envelope.watchdog_id
+        and ref.get("runtime_id") == envelope.runtime_id
+        and ref.get("dataflow_id") == envelope.dataflow_id
+        and ref.get("manifest_hash") == envelope.manifest_hash
+        for ref in (ownership.details or {}).get("predecessor_watchdogs", [])
+    ))
 
     # Step 3: fence — reject a watchdog_id that is not the active one
-    if active_watchdog_id != envelope.watchdog_id:
+    if active_watchdog_id != envelope.watchdog_id and not historical:
         raise StaleWatchdogReport(
             envelope.runtime_id,
             reported_watchdog_id=envelope.watchdog_id,
@@ -141,6 +274,34 @@ def ingest_watchdog_report(raw: Mapping) -> int:
             f"manifest_hash {envelope.manifest_hash!r} does not match runtime "
             f"{envelope.runtime_id!r}'s active manifest"
         )
+
+    if lifecycle:
+        _validate_lifecycle(envelope)
+        session = SessionRepository().get(ownership.session_id)
+        if session is None:
+            raise UnknownDataflow(envelope.dataflow_id)
+        with transaction():
+            event_id = BackendEventRepository().append(
+                event_type=envelope.event_type, session_id=session.id,
+                dataflow_id=envelope.dataflow_id, payload=dict(envelope.payload),
+                runtime_id=envelope.runtime_id, watchdog_id=envelope.watchdog_id,
+                report_id=envelope.report_id, commit=False,
+            )
+            accepted = db.session.get(BackendEvent, event_id)
+            if (accepted.event_type != envelope.event_type
+                    or accepted.session_id != session.id
+                    or accepted.watchdog_id != envelope.watchdog_id
+                    or accepted.dataflow_id != envelope.dataflow_id
+                    or accepted.payload != dict(envelope.payload)):
+                raise ValueError("report_id already identifies different durable evidence")
+            # Adoption may rebind the same watchdog's pending outbox to its
+            # new host runtime_id. Producer/session/dataflow and payload remain
+            # immutable; the active ownership checks above authenticate rebinding.
+            _project_recording(session, ownership, envelope.payload, current_producer=not historical)
+        if envelope.event_type.startswith("runtime.stop_"):
+            from app.services.sessions import reconcile_terminal_run
+            reconcile_terminal_run(session.id, envelope)
+        return event_id
 
     # Step 5: idempotent persist — duplicate report_id returns the existing id
     event_id = BackendEventRepository().append(

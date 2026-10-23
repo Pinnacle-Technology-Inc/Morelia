@@ -228,3 +228,17 @@ def _row_to_report(row: sqlite3.Row | tuple) -> OutboxReport:
 
 
 __all__ = ["OutboxReport", "WatchdogOutbox", "default_outbox_path"]
+
+
+def read_lifecycle_reports(path: str | Path, *, pending_only: bool = False) -> list[OutboxReport]:
+    """Read producer evidence, including delivered rows, without creating a file."""
+    uri = Path(path).resolve().as_uri() + "?mode=ro"
+    with sqlite3.connect(uri, uri=True) as conn:
+        rows = conn.execute(
+            "SELECT id, report_id, dataflow_id, runtime_id, watchdog_id, "
+            "manifest_hash, event_type, payload, enqueued_at FROM outbox_reports "
+            "WHERE event_type IN ('runtime.acquisition_started', 'runtime.recording_started', 'runtime.recording_progress', "
+            "'runtime.stop_requested', 'runtime.stop_finished') "
+            + ("AND delivered_at IS NULL " if pending_only else "") + "ORDER BY id"
+        ).fetchall()
+    return [_row_to_report(row) for row in rows]

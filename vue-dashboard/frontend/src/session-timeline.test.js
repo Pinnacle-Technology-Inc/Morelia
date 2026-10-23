@@ -44,6 +44,29 @@ describe("formatGapWindow", () => {
 });
 
 describe("buildSessionTimeline", () => {
+  it("does not infer completion from one runtime owner's teardown receipt", () => {
+    const operation = {
+      operation_id: "legacy-stop", command: "stop", state: "failed", error_message: "unclean shutdown",
+      details: { teardown_confirmed: true, output_integrity_confirmed: false },
+    };
+    const [entry] = buildSessionTimeline({ operations: [operation] });
+    expect(entry).toMatchObject({ title: "Stop failed", tone: "bad", summary: "unclean shutdown" });
+    expect(entry.details).toBe(operation);
+  });
+
+  it("shows new warning receipts and clean stop completion", () => {
+    const entries = buildSessionTimeline({ operations: [
+      { operation_id: "clean", command: "stop", state: "succeeded" },
+      { operation_id: "warning", command: "stop", state: "succeeded", details: {
+        warnings: [{ code: "unclean_shutdown", message: "Some final samples could not be verified." }],
+      } },
+    ] });
+    expect(entries.find((entry) => entry.key === "operation:clean"))
+      .toMatchObject({ title: "Stop completed", tone: "good" });
+    expect(entries.find((entry) => entry.key === "operation:warning"))
+      .toMatchObject({ title: "Stop completed with warnings", tone: "warn", summary: "Some final samples could not be verified." });
+  });
+
   it("turns repeated runtime reports into meaningful dataflow transitions", () => {
     const events = [
       report("1", "2026-08-12T10:00:00Z", "healthy"),

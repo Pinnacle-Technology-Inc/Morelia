@@ -168,16 +168,20 @@ def create_operation(
                 )
                 return existing
 
-            _raise_for_uncertain_conflict(
-                dataflow_id=dataflow_id,
-                scope=classification.scope,
-                target_device_id=target_device_id,
-            )
-            _raise_for_active_conflict(
-                dataflow_id=dataflow_id,
-                scope=classification.scope,
-                target_device_id=target_device_id,
-            )
+            # Stop is cancellation, including while startup/recovery is in flight.
+            # Its stable request key joins duplicate stops instead of creating a
+            # second shutdown. Other commands retain the normal conflict domain.
+            if command != "stop":
+                _raise_for_uncertain_conflict(
+                    dataflow_id=dataflow_id,
+                    scope=classification.scope,
+                    target_device_id=target_device_id,
+                )
+                _raise_for_active_conflict(
+                    dataflow_id=dataflow_id,
+                    scope=classification.scope,
+                    target_device_id=target_device_id,
+                )
 
             operation_id = uuid4().hex
             row = Operation(

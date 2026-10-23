@@ -6,18 +6,29 @@ boundaries — all keyed by durable sink identity and kept strictly separate fro
 source/stream health.
 """
 
+import time
+from queue import Queue
+from types import SimpleNamespace
+
+import pytest
 from structlog.contextvars import bind_contextvars
 
 import app.services.sessions as session_service
+from Morelia.Watchdog.watchdog import StreamWatcher
 from app.database import db, transaction
-from app.domain.enums import DeviceType, IncidentStatus, OperationScope
+from app.domain.enums import DeviceType, IncidentStatus, OperationScope, PolicyMode, SinkType
 from app.models.operation import Operation
 from app.models.output_file import OutputFile
+from app.models.recovery_gap import RecoveryGap
 from app.repositories.incidents import IncidentRepository
 from app.repositories.recovery_gaps import RecoveryGapRepository
 from app.repositories.sessions import SessionRepository
+from app.runtime_child import morelia
+from app.runtime_child.driver import RuntimePhase
+from app.runtime_host.manifest import DeviceFlow, Manifest
 from app.services.device_configs import create as create_device_config
 from app.services.event_ingest import ingest_report
+from app.services.gaps import evaluate_report
 
 
 def _report(
@@ -463,3 +474,210 @@ def test_recovery_records_one_boundary_per_sink_linked_to_its_sink_incident(app)
         # the source stream also produced its own (sink-less) recovery gap
         source_gaps = [g for g in gaps_repo.list_for_session(session_id) if g.sink_id is None]
         assert len(source_gaps) == 1
+
+
+GAP_START = 1792006603.0
+GAP_DEVICE = "AB0MZ1AVA"
+
+
+def test_watchdog_preserves_sample_epoch_for_gap_completion():
+    watcher = StreamWatcher.__new__(StreamWatcher)
+    watcher.stream_index = 1
+    watcher._max_heartbeat_age_sec = 10.0
+    watcher._monitor = SimpleNamespace(get_stream_heartbeat=lambda *_: {
+        "state": "fresh", "last_data_at": GAP_START + 23,
+        "age_sec": 0, "packet_count": 1,
+    })
+    heartbeat = watcher._get_heartbeat()
+    assert heartbeat["last_data_at_epoch"] == GAP_START + 23
+    assert heartbeat["status"] == "fresh"
+    assert heartbeat["packet_count"] == 1
+
+
+@pytest.fixture
+def gap_scenario(app, monkeypatch, tmp_path):
+    module = morelia
+    clock = [GAP_START]
+    monkeypatch.setattr(
+        module, "time", SimpleNamespace(
+            time=lambda: clock[0], time_ns=lambda: int(clock[0] * 1_000_000_000),
+            monotonic=time.monotonic,
+        ),
+    )
+    with app.app_context():
+        session = SessionRepository().create({"name": "Session 23 gap oracle"})
+        manifest = Manifest(
+            schema_version="3", dataflow_id="gap-oracle", session_id=session.id,
+            policy=PolicyMode.AUTOMATE,
+            device_flows=(DeviceFlow(
+                device_id=GAP_DEVICE, name="4", hardware_id=GAP_DEVICE, port="COM3",
+                parameters={}, sink_type=SinkType.PVFS,
+                sink_location=str(tmp_path / "recording.pvfs"),
+            ),),
+        )
+        reports = []
+
+        def ingest(report):
+            reports.append(report)
+            evaluate_report(report, session_id=session.id)
+
+        runtime = module.MoreliaRuntime(manifest=manifest, on_report=ingest)
+        runtime._phase = RuntimePhase.RUNNING
+        runtime._source_error_queue = Queue()
+        yield SimpleNamespace(
+            runtime=runtime, clock=clock, reports=reports,
+            rows=lambda: db.session.scalars(db.select(RecoveryGap).order_by(RecoveryGap.id)).all(),
+        )
+
+
+def gap_source(gap_scenario, state, at):
+    gap_scenario.clock[0] = at
+    gap_scenario.runtime._source_error_queue.put({
+        "source_id": GAP_DEVICE, "source_port": "COM3", "state": state,
+        "timestamp_ns": int(at * 1_000_000_000),
+        "failure_kind": "source_read", "exception_type": "OSError",
+        "message": "device disconnected", "consecutive_failures": 3,
+    })
+    gap_scenario.runtime._drain_source_errors()
+
+
+def gap_report(gap_scenario, at, *, action="none", healthy=False, packets=0, physical=None,
+           sample_at=None):
+    gap_scenario.clock[0] = at
+    detail = {"hardware_present": None}
+    if physical is not None:
+        detail["disconnect"] = physical
+    gap_scenario.runtime._emit_from_watchdog_report({"streams": [{
+        "stream_health": "healthy" if healthy else "unhealthy",
+        "signals": {
+            "worker": {"status": "alive"},
+            "heartbeat": {
+                "status": "fresh" if packets else "missing",
+                "packet_count": packets, "age_sec": 0 if packets else None,
+                "last_data_at_epoch": (at if sample_at is None else sample_at) if packets else None,
+            },
+        },
+        "action": {"taken": action, "detail": detail},
+    }]})
+
+
+def gap_begin_long(gap_scenario, at=GAP_START):
+    previous_count = len(gap_scenario.rows())
+    gap_source(gap_scenario, "degraded", at)
+    gap_source(gap_scenario, "degraded", at + 5)
+    gap_source(gap_scenario, "recovery_window_expired", at + 10)
+    gap_report(gap_scenario, at + 10, action="restart_failed")
+    assert len(gap_scenario.rows()) == previous_count
+
+
+def gap_assert_window(row, start, end, continued):
+    assert row.device_id == GAP_DEVICE
+    assert row.gap_start == {"timestamp": start}
+    assert row.gap_end == {"timestamp": end}
+    assert row.details["duration_seconds"] == end - start
+    assert row.details["recording_continued"] is continued
+
+
+def test_unknown_presence_long_disconnect_saves_original_time(gap_scenario):
+    gap_begin_long(gap_scenario)
+    gap_report(gap_scenario, GAP_START + 23, action="connection_restored", healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 23, False)
+
+
+def test_ping_only_recovery_waits_for_sample_then_saves_gap(gap_scenario):
+    gap_begin_long(gap_scenario)
+    gap_report(gap_scenario, GAP_START + 20, action="connection_restored", healthy=True)
+    assert gap_scenario.rows() == []
+    gap_report(gap_scenario, GAP_START + 23, healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 23, False)
+
+
+@pytest.mark.parametrize("cached_sample_at", [GAP_START - 1, GAP_START + 10])
+def test_cached_healthy_snapshot_cannot_close_long_disconnect(gap_scenario, cached_sample_at):
+    gap_begin_long(gap_scenario)
+    gap_report(gap_scenario, GAP_START + 20, action="connection_restored", healthy=True,
+           packets=100, sample_at=cached_sample_at)
+    assert gap_scenario.rows() == []
+    gap_report(gap_scenario, GAP_START + 25, healthy=True, packets=1, sample_at=GAP_START + 23)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 23, False)
+
+
+def test_repeated_restore_and_replayed_report_do_not_duplicate_gap(gap_scenario):
+    gap_begin_long(gap_scenario)
+    gap_report(gap_scenario, GAP_START + 23, action="connection_restored", healthy=True, packets=1)
+    healed = gap_scenario.reports[-1]
+    evaluate_report(healed, session_id=gap_scenario.runtime._manifest.session_id)
+    gap_report(gap_scenario, GAP_START + 24, action="connection_restored", healthy=True, packets=2)
+    assert len(gap_scenario.rows()) == 1
+
+
+def test_two_long_disconnects_keep_separate_episodes(gap_scenario):
+    for start in (GAP_START, GAP_START + 100):
+        gap_begin_long(gap_scenario, start)
+        gap_report(gap_scenario, start + 23, action="connection_restored", healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 2
+    assert rows[0].gap_id != rows[1].gap_id
+    gap_assert_window(rows[0], GAP_START, GAP_START + 23, False)
+    gap_assert_window(rows[1], GAP_START + 100, GAP_START + 123, False)
+
+
+def test_old_physical_restore_cannot_replace_later_source_episode(gap_scenario):
+    gap_begin_long(gap_scenario)
+    old_physical = {
+        "episode_id": "old-physical-episode", "started_at": GAP_START,
+        "ended_at": GAP_START + 23, "elapsed_sec": 23,
+        "recording_continued": False, "reason": "physical disconnect",
+    }
+    gap_report(gap_scenario, GAP_START + 23, action="connection_restored", healthy=True,
+           packets=1, physical=old_physical)
+    gap_begin_long(gap_scenario, GAP_START + 100)
+    gap_report(gap_scenario, GAP_START + 120, action="connection_restored", healthy=True,
+           packets=100, sample_at=GAP_START + 23, physical=old_physical)
+    assert len(gap_scenario.rows()) == 1
+    gap_report(gap_scenario, GAP_START + 123, action="connection_restored", healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 2
+    assert rows[0].gap_id != rows[1].gap_id
+    gap_assert_window(rows[1], GAP_START + 100, GAP_START + 123, False)
+
+
+def test_short_disconnect_still_records_in_place_recovery(gap_scenario):
+    gap_source(gap_scenario, "degraded", GAP_START)
+    gap_source(gap_scenario, "recovered", GAP_START + 4.875)
+    gap_report(gap_scenario, GAP_START + 4.875, healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 4.875, True)
+
+
+def test_stale_display_cleanup_preserves_original_outage(gap_scenario):
+    gap_source(gap_scenario, "degraded", GAP_START)
+    gap_report(gap_scenario, GAP_START + 3600)
+    assert gap_scenario.rows() == []
+    gap_source(gap_scenario, "recovery_window_expired", GAP_START + 10)
+    gap_report(gap_scenario, GAP_START + 3623, action="connection_restored", healthy=True, packets=1)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 3623, False)
+
+
+def test_overlapping_physical_episode_keeps_earliest_source_time_once(gap_scenario):
+    gap_begin_long(gap_scenario)
+    physical = {
+        "episode_id": "physical-episode", "started_at": GAP_START + 2,
+        "ended_at": GAP_START + 23, "elapsed_sec": 21,
+        "recording_continued": False, "reason": "physical disconnect",
+    }
+    gap_report(gap_scenario, GAP_START + 23, action="connection_restored", healthy=True,
+           packets=1, physical=physical)
+    gap_report(gap_scenario, GAP_START + 24, healthy=True, packets=2)
+    rows = gap_scenario.rows()
+    assert len(rows) == 1
+    gap_assert_window(rows[0], GAP_START, GAP_START + 23, False)

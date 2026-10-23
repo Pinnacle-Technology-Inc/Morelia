@@ -7,21 +7,8 @@ export const sessionTabs = [
   { id: "archived", label: "Archived" },
 ];
 
-// ---------------------------------------------------------------------------
-// Session health vocabulary
-// ---------------------------------------------------------------------------
-//
-// Health answers ONE question: "is this session's data moving as intended right
-// now?" It is a live property — the backend only produces it from a current
-// poller snapshot, and returns null rather than inventing one from a stale
-// report (see session_status._health_value). That null arrives in two very
-// different situations, and collapsing them is what made the badge misleading:
-//
-//   1. Nothing is running, so there is nothing to measure. Not a fault.
-//   2. Something SHOULD be running and we have lost sight of it. A fault.
-//
-// Case 1 gets its own resting label; case 2 gets `Not reporting`. Neither is
-// called "Unknown" any more, because "Unknown" read as case 2 in every row.
+// The backend returns health from a current poller snapshot, or null when none exists.
+// Inactive sessions show "Not running". Running sessions without a current report show "Not reporting".
 export const SessionHealth = Object.freeze({
   NOT_RUNNING: "Not running",
   HEALTHY: "Healthy",
@@ -34,12 +21,8 @@ export const SessionHealth = Object.freeze({
   NEEDS_ACTION: "Needs action",
 });
 
-// Raw backend HealthState (domain/enums.py) -> operator label, for a session
-// the control plane believes is running. `delayed`/`unreachable`/`failed` stay
-// distinct instead of collapsing into "Needs action": they call for different
-// operator responses, and StatusBadge already renders all three. `stopped` here
-// is NOT the lifecycle state — it means the dataflow ended while the plane still
-// intends the session to run, which is a real disagreement worth its own label.
+// Map backend health states to display labels for running sessions.
+// "stopped" means the dataflow stopped while the session still expects it to run.
 const LIVE_HEALTH_LABELS = {
   healthy: SessionHealth.HEALTHY,
   suspect: SessionHealth.HEALTHY,
@@ -52,14 +35,8 @@ const LIVE_HEALTH_LABELS = {
   unknown: SessionHealth.NOT_REPORTING,
 };
 
-// Per-lifecycle resting label. A single shared value is the default because the
-// State column already says WHICH resting state the session is in — repeating it
-// here would just be a second copy of that column. Override an individual entry
-// when a lifecycle genuinely needs its own wording.
-//
-// TODO(operator vocabulary): confirm the resting wording. See the note in the
-// handoff — the main alternative is "Not monitored", which describes the health
-// axis itself ("we are not measuring") rather than restating the lifecycle.
+// Inactive sessions share one health label; the State column shows their lifecycle.
+// TODO: Confirm whether the label should be "Not running" or "Not monitored".
 const RESTING_HEALTH = {
   Preparing: SessionHealth.NOT_RUNNING,
   Scheduled: SessionHealth.NOT_RUNNING,
@@ -67,11 +44,9 @@ const RESTING_HEALTH = {
   Cancelled: SessionHealth.NOT_RUNNING,
 };
 
-// Health labels that mean "an operator should look at this". `Not reporting` is
-// deliberately EXCLUDED: losing sight of a session is a visibility gap, not a
-// confirmed fault, and session-flow-status.js already caps that class of signal
-// at amber for the same reason — routing it here would train operators to
-// ignore the Needs Attention tab.
+// These health states appear in the Needs Attention tab.
+// "Not reporting" indicates missing reports, so it stays out of this list.
+// session-flow-status.js displays it as an amber warning.
 export const ATTENTION_HEALTH = Object.freeze([
   SessionHealth.DELAYED,
   SessionHealth.UNREACHABLE,
@@ -81,11 +56,9 @@ export const ATTENTION_HEALTH = Object.freeze([
 ]);
 
 /**
- * Resolve the health badge for one session.
- *
- * @param {string|null|undefined} rawHealth  backend HealthState, or null when
- *   the poller has no live snapshot for this session's dataflow.
- * @param {string} lifecycle  the normalized lifecycle label (Preparing..Completed).
+ * Return the session's health badge label.
+ * @param {string|null|undefined} rawHealth Backend health state, or null without a current report.
+ * @param {string} lifecycle Display label such as "Active" or "Completed".
  */
 export function resolveSessionHealth(rawHealth, lifecycle) {
   if (!isRunningLifecycle(lifecycle)) {
@@ -136,4 +109,80 @@ export function summarizeAttentionSessions(sessions, limit = 3) {
     visible,
     hidden: attentionSessions.length - visible.length,
   };
+}
+
+const lifecycleLabels = {
+  preparing: "Preparing",
+  scheduled: "Scheduled",
+  starting: "Starting",
+  active: "Active",
+  stopping: "Stopping",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+/** Convert a backend status to the label used by session lists and templates. */
+export function sessionLifecycleLabel(status) {
+  return lifecycleLabels[status] ?? "Unknown";
+}
+
+export function normalizeSession(session, fleetSession = {}) {
+  const flows = Array.isArray(session.device_flows) ? session.device_flows : [];
+  const sinkCount = flows.reduce(
+    (total, flow) => total + (Array.isArray(flow?.sinks) ? flow.sinks.length : 0),
+    0,
+  );
+  const lifecycle = sessionLifecycleLabel(session.status);
+  const health = resolveSessionHealth(fleetSession.health, lifecycle);
+
+  return {
+    id: String(session.id),
+    name: session.name,
+    lifecycle,
+    health,
+    experiment: session.experiment_id ? String(session.experiment_id) : null,
+    scheduledTime: session.schedule?.start_at ?? null,
+    durationSeconds: session.duration_seconds ?? null,
+    recordingBounds: Array.isArray(session.recording_bounds) ? session.recording_bounds : [],
+    startedAt: session.started_at ?? null,
+    endedAt: session.ended_at ?? null,
+    fallbackPolicy: session.schedule?.fallback_policy ?? null,
+    cancellation: session.cancellation_details ?? session.schedule?.cancellation ?? null,
+    deviceCount: flows.length,
+    streamCount: flows.length,
+    sinkCount,
+    // The overview omits watchdog_state. SessionDetailPage reads it from /status.
+    watchdog: "Unknown",
+    phase: fleetSession.phase ?? null,
+    attentionReason: fleetSession.attention_reason ?? null,
+    attentionSince: fleetSession.attention_since ?? null,
+    policy: session.policy,
+    deviceFlows: flows,
+    createdAt: session.created_at ?? null,
+    isOwner: true,
+  };
+}
+
+/** Build the operation's display status and warnings without changing its details. */
+export function operationOutcome(operation = {}) {
+  const state = String(operation.state ?? "").trim().toLowerCase() || "unknown";
+  const stop = String(operation.command ?? "").trim().toLowerCase() === "stop";
+  const details = operation.details ?? {};
+  // A stop succeeds only when the operation confirms shutdown for the whole session.
+  // A receipt from one runtime owner cannot confirm that the others stopped.
+  const completed = stop && state === "succeeded";
+  const warnings = stop && Array.isArray(details.warnings) ? [...details.warnings] : [];
+  const result = details.shutdown_result;
+  const unclean = result && (result.forced_termination === true || result.forced === true ||
+    result.outcome === "forced" || result.clean === false ||
+    (result.stream_results ?? []).some((stream) => stream?.forced_termination === true));
+  if (stop && (unclean || (details.teardown_confirmed === true && details.output_integrity_confirmed !== true)) &&
+      !warnings.some((warning) => warning?.code === "unclean_shutdown")) {
+    warnings.push({ code: "unclean_shutdown", message: "Unclean shutdown; output integrity is not confirmed." });
+  }
+  const label = completed ? warnings.length ? "Completed with warnings" : "Completed"
+    : state[0].toUpperCase() + state.slice(1);
+  const tone = completed ? warnings.length ? "warn" : "good"
+    : state === "succeeded" ? "good" : ["failed", "uncertain"].includes(state) ? "bad" : "neutral";
+  return { state: completed ? "succeeded" : state, label, tone, completed, warnings };
 }

@@ -78,6 +78,7 @@ class SessionRepository:
                 experiment_id=data.get("experiment_id"),
                 notes=(str(data.get("notes")).strip() or None) if data.get("notes") is not None else None,
                 schedule=data.get("schedule"),
+                duration_seconds=data.get("duration_seconds"),
                 scheduled_for=data.get("scheduled_for"),
                 schedule_claim_token=data.get("schedule_claim_token"),
                 schedule_claim_expires_at=data.get("schedule_claim_expires_at"),
@@ -314,11 +315,15 @@ class SessionRepository:
         ).all()
 
     def with_runtime_host_identity(self) -> list[Session]:
-        """Sessions whose persisted host identity can be rehydrated on startup."""
+        """Managed runs needing adoption or cleanup, including lost host ports."""
+        from app.models.runtime_ownership import RuntimeOwnership
         return db.session.scalars(
             db.select(Session).where(
                 Session.dataflow_id.isnot(None),
-                Session.runtime_port.isnot(None),
+                db.or_(
+                    Session.runtime_port.isnot(None),
+                    db.exists().where(RuntimeOwnership.session_id == Session.id),
+                ),
                 Session.status.in_(
                     (
                         SessionStatus.STARTING,

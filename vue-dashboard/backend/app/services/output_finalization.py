@@ -516,6 +516,7 @@ def coordinator_from_config(
 # release gates and operator status can distinguish an operator stop from a
 # daemon shutdown.
 COMPLETION_USER_STOP = "user_stop"
+COMPLETION_DURATION_ENDED = "duration_ended"
 COMPLETION_SHUTDOWN = "shutdown"
 COMPLETION_RECONCILIATION = "reconciliation"
 
@@ -849,6 +850,15 @@ def reconcile_completed_session_acquisitions() -> list[AcquisitionCompletion]:
     ).all()
     outcomes: list[AcquisitionCompletion] = []
     for session_id in session_ids:
+        # A terminal process state alone cannot certify recorded output. New
+        # stop receipts explicitly gate integrity; legacy sessions retain their
+        # prior reconciliation policy.
+        from app.models.operation import Operation
+        stops = db.session.scalars(db.select(Operation).where(
+            Operation.session_id == session_id, Operation.command == "stop"
+        )).all()
+        if any((op.details or {}).get("output_integrity_confirmed") is False for op in stops):
+            continue
         try:
             outcomes.extend(
                 complete_session_acquisitions(

@@ -1,0 +1,12 @@
+--- a/pvfs_tools/Core/pvfs_data_file.py
++++ b/pvfs_tools/Core/pvfs_data_file.py
+@@ -293,6 +293,9 @@
+                 return None
+             
+             indexed_file.set_data_rate(data_rate)
++            previous = self._indexed_data_files.get(channel_name)
++            if previous is not None:
++                previous.close()
+             self._indexed_data_files[channel_name] = indexed_file
+             
+             if self._database:

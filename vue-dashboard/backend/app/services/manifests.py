@@ -1,9 +1,6 @@
-"""Resolver: session config to immutable, hashed runtime manifest.
+"""Build runtime settings from session, device, and sink configs.
 
-Reads each runnable ``device_flows`` entry from the session, looks up the
-referenced device config by id, snapshots its parameters and port into the
-manifest, then builds and persists one RuntimeManifest row. No host spawn
-happens here.
+resolve() saves the manifest. build_for_preview() does not. Neither starts a process.
 """
 
 from __future__ import annotations
@@ -13,8 +10,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from app.services.device_ports import PortResolutionError, refresh_port
+
 from app.database import db, transaction
-from app.domain.enums import PolicyMode, SinkType
+from app.domain.enums import DeviceType, PolicyMode, SinkType
 from app.domain.errors import (
     DeviceConfigNotFound,
     EmptySession,
@@ -41,20 +40,17 @@ from app.services.registry import lookup_device
 
 _repo = SessionRepository()
 
-# Only these sink categories own an on-disk output location, so only they take
-# part in file-path allocation / conflict handling. Service (Influx/Quest) and
-# Plot sinks never receive a fabricated file path (see acceptance criterion 2
-# and design doc section 3 "Sink categories").
+# Only file sinks need an output path and file-conflict checks.
 _FILE_SINK_TYPES = frozenset({SinkType.CSV, SinkType.EDF, SinkType.PVFS})
 
 
 def _path_segment(value: str) -> str:
-    """Make a source/sink identity safe to use as a single path segment."""
+    """Replace colons and slashes in a path segment."""
     return value.replace(":", "-").replace("/", "-").replace("\\", "-")
 
 
 def _run_file_stem(value: str) -> str:
-    """Turn a session display name into one hyphen-delimited filename stem."""
+    """Turn a display name into lowercase words joined by hyphens."""
     words = "".join(char if char.isalnum() else " " for char in value).split()
     return "-".join(words).lower()
 
@@ -64,7 +60,7 @@ def _device_file_stem(
     device_name: str | None,
     device_config_id: int,
 ) -> str:
-    """Return the mandatory ``<device-code>-<device-name>`` file suffix."""
+    """Build the device-code/name suffix. Use the config ID if unnamed."""
     match = re.search(r"\d+", device_type)
     code = match.group(0) if match else (_run_file_stem(device_type) or "device")
     name = _run_file_stem(device_name or "") or f"config-{device_config_id}"
@@ -72,15 +68,9 @@ def _device_file_stem(
 
 
 def conflict_label(source_nickname: str | None, sink_name: str) -> str:
-    """Identify a file sink by its source nickname plus sink name.
+    """Label a file conflict as source:sink, or just sink if the source is unnamed.
 
-    A source can now own several file sinks, so the source nickname alone no
-    longer pinpoints which sink's location collided — the label carries both.
-
-    Public because it is a wire contract: a SinkLocationExists conflict
-    reports this label as its ``nickname`` so a client can say which sink's
-    location collided. It is outbound only — the fix comes back positionally
-    by positional run assignments, not keyed by label.
+    Used for display, not as an ID when submitting a fix.
     """
     if source_nickname:
         return f"{source_nickname}:{sink_name}"
@@ -105,26 +95,12 @@ def _allocate_sink_location(
     file_ordinal: int = 1,
     validate: bool = True,
 ) -> str:
-    """Assign a default output path for a file sink that omitted sink_location.
+    """Choose an output path when the user did not supply one.
 
-    A template run uses its hyphenated session display name plus the mandatory
-    device code and name as the filename. An unnamed device uses its stable
-    config id. A later same-format output for that device receives an ordinal.
-
-    Unlike an explicit, user-supplied sink_location (which raises
-    SinkLocationExists instead — see _build_sink — because the operator
-    named that file on purpose), an allocated path lives entirely inside our
-    own OUTPUT_DIR namespace: a leftover file at the candidate path (a
-    retried spawn, a reused OUTPUT_DIR) is deduplicated rather than failing
-    the whole session start. ``create_dir`` is False for build_for_preview(),
-    which must stay side-effect-free.
-
-    ``validate=False`` (stop/reconcile re-resolving an already-running
-    session — see resolve()) skips the collision check entirely and returns
-    the deterministic candidate path as-is. Without this, re-resolving an
-    ACTIVE session's manifest would find its own already-open output file
-    "claimed" and silently dedupe to a different (-2) path than the one the
-    runtime host is actually writing to.
+    - Name it from the session and device, or the device and sink IDs.
+    - Number extra outputs of the same format for one device.
+    - Choose a free filename unless validate=False.
+    - Create the directory only when create_dir=True.
     """
     safe_session_name = _run_file_stem(session_name) if session_name else ""
     if safe_session_name:
@@ -167,17 +143,11 @@ def _build_sink(
     create_dir: bool,
     default_file_ordinal: int = 1,
 ) -> SinkConfig:
-    """Resolve one canonical ``sinks[]`` entry into a native ``SinkConfig``.
+    """Build one sink's runtime settings.
 
-    Preserves the source-local sink identity (``sink_name``) and order. File
-    sinks (CSV/EDF/PVFS) get a resolved absolute ``file_path`` in their
-    parameters — either the operator's explicit sink_location (whose parent is
-    created if absent, and which is validated for conflicts) or an allocated
-    one. Service/Plot sinks carry no fabricated file path and never enter
-    filename conflict handling.
-
-    Both branches now guarantee the same thing to the worker: by the time a
-    ``file_path`` leaves here, its parent directory exists and is writable.
+    - File sinks: resolve the supplied path or choose a default.
+    - Reject claimed user paths when validation is enabled.
+    - Other sinks: keep their settings without adding a file path.
     """
     sink_type = SinkType(sink_entry["sink_type"])
     sink_name = str(sink_entry["sink_name"])
@@ -187,12 +157,7 @@ def _build_sink(
         raw_location = sink_entry.get("sink_location")
         if raw_location:
             sink_location = sink_paths.resolve_sink_location(str(raw_location))
-            # Parent first: an operator-named destination is created here if it
-            # is merely missing, because the worker cannot create it later —
-            # output.managed_file.create() only asserts, and it asserts from
-            # inside the worker process where the error dies with the exit
-            # code. ``create_dir`` is the same side-effect gate the allocated
-            # branch uses, so build_for_preview() still touches no filesystem.
+            # Prepare the parent directory before the worker starts. Skip for previews.
             if create_dir:
                 parent_issue = sink_paths.ensure_sink_parent(sink_location)
                 if parent_issue is not None:
@@ -229,9 +194,7 @@ def _build_sink(
         parameters["file_path"] = sink_location
 
     if sink_type is SinkType.PVFS:
-        # PVFS writer isolation is a runtime safety invariant, not a
-        # user-configurable session option. Normalizing it here also upgrades
-        # manifests resolved from older stored configurations.
+        # Always run PVFS writing in a separate process, including for older configs.
         parameters["use_writer_process"] = True
 
     return SinkConfig(
@@ -248,47 +211,49 @@ def resolve(
     dataflow_id: str | None = None,
     validate_sink_locations: bool = True,
 ) -> Manifest:
-    """Resolve a session's device_flows into an immutable hashed Manifest.
+    """Build and save a session's runtime manifest.
 
-    For each entry in device_flows: looks up the referenced device config by
-    id, snapshots its parameters into a DeviceFlow value object. After all
-    entries resolve successfully the Manifest is built and one RuntimeManifest
-    row is persisted.
-
-    Idempotent on hash: re-resolving identical inputs returns the same
-    Manifest without writing a duplicate row.
-
-    ``validate_sink_locations=False`` skips the sink_location collision
-    check (SinkLocationExists / dedup — see _build_manifest). Pass this when
-    re-resolving a session that's already ACTIVE (stop_managed, reconcile):
-    the session's own output file legitimately exists by then — it's the
-    file the running host is writing to, not a collision to reject. Leave it
-    True (the default) for a fresh start, which is the only time this
-    resolve is actually deciding whether a NEW file may be created.
-
-    Raises:
-        SessionNotFound:      no session with that id.
-        EmptySession:         session has no device_flows.
-        UnresolvableSession:  a referenced device config is missing or deleted.
+    - Validate file paths for a new run.
+    - For stop/reconcile, pass validate_sink_locations=False to reuse saved settings.
+    - Save only when the manifest hash is new.
+    - Raise an error for a missing session, empty session, or invalid config.
     """
     session = _repo.get(session_id)
     if session is None:
         raise SessionNotFound(session_id)
+
+    resolved_dataflow_id = dataflow_id or session.dataflow_id or str(session_id)
+    if not validate_sink_locations:
+        # Stop/reconcile must keep the running process's manifest, even if ports changed.
+        persisted = db.session.scalars(
+            db.select(RuntimeManifest)
+            .where(
+                RuntimeManifest.session_id == session_id,
+                RuntimeManifest.content["dataflow_id"].as_string() == resolved_dataflow_id,
+            )
+            .order_by(RuntimeManifest.id.desc())
+        ).first()
+        if persisted is not None:
+            saved = Manifest.from_dict(persisted.content)
+            if saved.duration_seconds != session.duration_seconds:
+                raise InvalidSessionEntry("duration_seconds", "does not match the immutable runtime manifest")
+            return saved
 
     flows = session.device_flows or []
     if not flows:
         raise EmptySession(session_id)
 
     manifest = _build_manifest(
-        dataflow_id=dataflow_id or session.dataflow_id or str(session_id),
+        dataflow_id=resolved_dataflow_id,
         session_name=session.name,
         policy=session.policy,
         flows=flows,
         session_id_for_errors=session_id,
         validate_sink_locations=validate_sink_locations,
+        duration_seconds=session.duration_seconds,
     )
 
-    # Skip insert if this hash is already persisted (idempotent on same inputs).
+    # Avoid saving the same manifest twice.
     existing = db.session.scalars(
         db.select(RuntimeManifest).where(RuntimeManifest.hash == manifest.hash)
     ).first()
@@ -311,7 +276,7 @@ def build_for_preview(
     *,
     format: str | None = None,
 ) -> Manifest:
-    """Build a runtime manifest from a session-config source without persisting it."""
+    """Preview runtime settings without saving them, creating directories, or probing devices."""
     data = _session_config._parse_source(session_config_source, format=format)
     canonical = _session_config._canonicalize(data)
     return _build_manifest(
@@ -331,8 +296,9 @@ def _build_manifest(
     flows: list[Mapping[str, Any]],
     session_id_for_errors: int | None,
     validate_sink_locations: bool = True,
+    duration_seconds: int | None = None,
 ) -> Manifest:
-    # Resolve all entries before touching the DB: fail-loud, no partial writes.
+    """Load device configs and build their runtime sink settings."""
     device_flows: list[DeviceFlow] = []
     allocated_counts: dict[tuple[int, SinkType], int] = {}
     for flow_index, entry in enumerate(flows):
@@ -376,13 +342,36 @@ def _build_manifest(
                 f"persisted device config {normalized_config_id!r} ({device_type!r}) "
                 f"is invalid: {exc}",
             ) from exc
+        connection = None
+        # Explicit connection preferences resolve once, without opening hardware.
+        # Configs without connection preferences keep their existing port resolution.
+        if session_id_for_errors is not None and validate_sink_locations and getattr(config, "connection", None):
+            from app.services.connections import resolve_connection
+            try:
+                connection = resolve_connection(hardware_id, config.connection, device_type)
+                port = str(connection["address"])
+                if config.port != port:
+                    with transaction():
+                        config.port = port
+            except PortResolutionError as exc:
+                raise InvalidSessionEntry(f"device_flows[{flow_index}].device_config_id", str(exc)) from exc
+        if (
+            session_id_for_errors is not None
+            and validate_sink_locations
+            and not getattr(config, "connection", None)
+            and not raw_parameters.get("use_d2xx", False)
+        ):
+            try:
+                port = refresh_port(DeviceType(device_type), config.hardware_id)
+            except PortResolutionError as exc:
+                raise InvalidSessionEntry(
+                    f"device_flows[{flow_index}].device_config_id", str(exc)
+                ) from exc
         device_id = f"{device_type}:{hardware_id}"
         device_name = str(config.nickname).strip() if config.nickname else None
         source_nickname = entry.get("nickname")
 
-        # Canonical entries (packet 02) always carry a non-empty ``sinks[]``
-        # collection. Guard defensively so a malformed raw entry fails loud
-        # rather than producing a DeviceFlow with zero sinks.
+        # Each device must have at least one sink.
         raw_sinks = entry.get("sinks")
         if not isinstance(raw_sinks, (list, tuple)) or not raw_sinks:
             if session_id_for_errors is None:
@@ -427,6 +416,7 @@ def _build_manifest(
                 port=port,
                 parameters=device_spec.as_dict(),
                 sinks=sinks,
+                connection=connection,
             )
         )
 
@@ -439,8 +429,7 @@ def _build_manifest(
         dataflow_id=dataflow_id,
         policy=resolved_policy,
         device_flows=tuple(device_flows),
-        # ``session_id_for_errors`` is the persisted session's id for a real
-        # resolve() and None for a side-effect-free preview — exactly the
-        # populate/None rule for the manifest's durable session identity.
+        # Previews have no saved session ID.
         session_id=session_id_for_errors,
+        duration_seconds=duration_seconds,
     )

@@ -40,6 +40,7 @@ const config = {
   Active: { icon: Play, tone: "green" },
   Stopping: { icon: StopCircle, tone: "orange" },
   Completed: { icon: CheckCircle2, tone: "green" },
+  "Completed with warnings": { icon: AlertTriangle, tone: "amber" },
   Cancelled: { icon: XCircle, tone: "neutral" },
   Healthy: { icon: CheckCircle2, tone: "green" },
   Suspect: { icon: AlertTriangle, tone: "amber" },
@@ -54,6 +55,11 @@ const config = {
   Recovering: { icon: RefreshCw, tone: "amber" },
   "Needs action": { icon: AlertTriangle, tone: "orange" },
   Unknown: { icon: CircleHelp, tone: "neutral" },
+  Waiting: { icon: Clock3, tone: "neutral" },
+  Checking: { icon: LoaderCircle, tone: "blue" },
+  Unverified: { icon: CircleHelp, tone: "neutral" },
+  Unavailable: { icon: CircleHelp, tone: "neutral" },
+  "Not checked": { icon: CircleHelp, tone: "neutral" },
   // Session-health resting/visibility states (see session-utils.SessionHealth).
   // `Not running` is neutral on purpose — a resting session is not broken; it
   // has nothing to measure. `Not reporting` is amber because a session we are

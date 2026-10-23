@@ -53,10 +53,14 @@ acquisition wrote them; the merge adds no re-quantization.
 
 from __future__ import annotations
 
+import math
 import multiprocessing as mp
 import os
+import struct
 import time
 import uuid
+import zlib
+from contextlib import contextmanager
 from pathlib import Path
 
 from app.services.output_finalization import MergeRequest, MergeResult
@@ -246,7 +250,7 @@ def _run_merge_worker(paths: list[str], temp_path: Path) -> dict:
     return result
 
 
-def _merge_worker(queue: "mp.Queue", paths: list[str], temp_path: str) -> None:
+def _merge_worker(queue: mp.Queue, paths: list[str], temp_path: str) -> None:
     """Child entrypoint: read+validate components, write temp, verify readback.
 
     Puts exactly one result dict on *queue*. All native handles opened here are
@@ -319,9 +323,6 @@ def _read_and_validate(paths: list[str]):
     ``{channel_name: [float, ...]}`` and ``device_preferences`` is the pinned,
     cross-component-verified preference row set to re-apply to the merged file.
     """
-    from pvfs_tools.Core.pvfs_binding import HighTime
-    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
-
     reference: _Schema | None = None
     reference_prefs: list[dict] | None = None
     segments: list[tuple[float, dict[str, list[float]]]] = []
@@ -332,14 +333,8 @@ def _read_and_validate(paths: list[str]):
         if not path.exists():
             raise PvfsMergeError(f"component file missing: {path}")
 
-        reader = PvfsDataFile()
-        try:
-            if not reader.open(str(path)):
-                raise PvfsMergeError(
-                    f"component {path} is unreadable or corrupt (open failed)"
-                )
-
-            channels = tuple(reader.get_channel_names())
+        with open_pvfs_reader(str(path)) as reader:
+            channels = _channel_names(reader)
             if not channels:
                 raise PvfsMergeError(f"component {path} exposes no channels")
 
@@ -356,7 +351,7 @@ def _read_and_validate(paths: list[str]):
                 info = reader.get_channel_info(name)
                 units.append((getattr(info, "unit", "") or "").strip())
                 rates.append(float(idf.get_data_rate()))
-                channel_start, channel_data[name] = _read_channel(idf, HighTime)
+                channel_start, channel_data[name] = _read_channel(idf)
                 channel_starts.append(channel_start)
 
             rate_set = set(rates)
@@ -402,21 +397,170 @@ def _read_and_validate(paths: list[str]):
                 )
             segments.append((channel_starts[0], channel_data))
             per_segment_counts.append(next(iter(counts)))
-        finally:
-            reader.close()
 
     assert reference is not None
     return reference, segments, per_segment_counts, (reference_prefs or [])
 
 
-def _read_channel(idf, HighTime) -> tuple[float, list[float]]:
+def _channel_names(reader) -> tuple[str, ...]:
+    """Preserve creation order; the dependency lists channel names alphabetically."""
+    names = reader.get_channel_names()
+    if len(names) != len(set(names)):
+        raise PvfsMergeError("PVFS duplicate channel names cannot be merged independently")
+    channels = []
+    for name in names:
+        info = reader.get_channel_info(name)
+        if info is None:
+            raise PvfsMergeError(f"PVFS channel {name!r} has no catalog information")
+        channels.append((info.id, name))
+    return tuple(name for _, name in sorted(channels))
+
+
+@contextmanager
+def open_pvfs_reader(path):
+    """Open a PVFS recording without saving its catalog during reader cleanup.
+    """
+    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
+
+    reader = PvfsDataFile(read_only=True)
+    # The installed close method saves the catalog even for read-only readers.
+    reader.flush = lambda synchronous=True: None
+    try:
+        if not reader.open(str(path)):
+            raise ValueError(f"PVFS recording is unreadable or corrupt: {path}")
+        yield reader
+    finally:
+        failures = []
+        for channel in reader._indexed_data_files.values():
+            if channel is not None:
+                try:
+                    channel.close()
+                except Exception as exc:
+                    failures.append(exc)
+        container = reader._pvfs
+        try:
+            if reader.close() is not True:
+                failures.append(ValueError(f"PVFS reader close failed: {path}"))
+            elif container is not None and container._wrapper is not None:
+                failures.append(ValueError(f"PVFS native container remained open: {path}"))
+        except Exception as exc:
+            failures.append(exc)
+        if failures:
+            raise ExceptionGroup("PVFS reader cleanup failed", failures)
+
+
+def _exact(handle, offset: int, size: int) -> bytes:
+    handle.seek(offset)
+    data = handle.read(size)
+    if len(data) != size:
+        raise ValueError("PVFS payload is truncated")
+    return data
+
+
+def read_channel_samples(channel) -> tuple[list[float], list[float]]:
+    """Read all sample timestamps and values from an already-open PVFS channel.
+    """
+    index = channel._index_file
+    data = channel._data_file
+    if index is None or data is None:
+        raise ValueError("PVFS channel has no open index or data handle")
+    channel._pvfs_file.lock()
+    try:
+        index_size = index.get_file_info().size
+        data_size = data.get_file_info().size
+        if index_size < 1000 or (index_size - 1000) % 44:
+            raise ValueError("PVFS index length is invalid")
+        header = _exact(index, 0, 52)
+        magic, version, datatype, rate, start_sec, start_sub, end_sec, end_sub, _ = struct.unpack(
+            "<IIIfqdqdI", header
+        )
+        if magic != 0xFF01FF01 or version != 1 or datatype != 0:
+            raise ValueError("PVFS channel encoding is unsupported")
+        if not math.isfinite(rate) or rate <= 0:
+            raise ValueError("PVFS sample rate is invalid")
+        if not all(math.isfinite(v) and 0 <= v < 1 for v in [start_sub, end_sub]):
+            raise ValueError("PVFS channel time bounds are invalid")
+        entries = []
+        for offset in range(1000, index_size, 44):
+            raw = _exact(index, offset, 44)
+            marker, seconds, fraction, reserved, data_offset, crc = struct.unpack("<8sqdqqI", raw)
+            if marker != b"\xa5" * 8 or reserved != 0 or zlib.crc32(raw[8:40]) != crc:
+                raise ValueError("PVFS index entry failed validation")
+            if not math.isfinite(fraction) or not 0 <= fraction < 1:
+                raise ValueError("PVFS index timestamp is invalid")
+            if data_offset < 0 or data_offset + 32 > data_size:
+                raise ValueError("PVFS index points outside channel data")
+            if entries and data_offset < entries[-1][2] + 36:
+                raise ValueError("PVFS block offsets overlap")
+            entries.append((seconds, fraction, data_offset))
+        if not entries:
+            if data_size:
+                raise ValueError("PVFS channel data has no index")
+            return [], []
+        if entries[0][2] != 0:
+            raise ValueError("PVFS first block does not start at zero")
+        timestamps: list[float] = []
+        samples: list[float] = []
+        last_sample = None
+        end_tolerance = 0.0
+        for number, (seconds, fraction, offset) in enumerate(entries):
+            raw_header = _exact(data, offset, 32)
+            marker, block_sec, block_sub, reserved = struct.unpack("<8sqdq", raw_header)
+            if (
+                marker != b"\xa5" * 8
+                or reserved != 0
+                or (block_sec, block_sub) != (seconds, fraction)
+            ):
+                raise ValueError("PVFS block header differs from its index")
+            next_offset = entries[number + 1][2] if number + 1 < len(entries) else None
+            payload_end = next_offset - 4 if next_offset is not None else data_size
+            payload_size = payload_end - offset - 32
+            if payload_size < 0 or payload_size % 4:
+                raise ValueError("PVFS float payload length is invalid")
+            values = []
+            crc = 0
+            for cursor in range(offset + 32, payload_end, 65536):
+                raw = _exact(data, cursor, min(65536, payload_end - cursor))
+                crc = zlib.crc32(raw, crc)
+                values.extend(struct.unpack(f"<{len(raw) // 4}f", raw))
+            if next_offset is not None:
+                (stored_crc,) = struct.unpack("<I", _exact(data, payload_end, 4))
+                if crc != stored_crc:
+                    raise ValueError("PVFS sample payload checksum mismatch")
+            # Native checkpoints can leave empty timestamp blocks between writes.
+            if values:
+                block_start = seconds + fraction
+                block_times = [block_start + i * (1.0 / rate) for i in range(len(values))]
+                if not math.isfinite(block_times[-1]):
+                    raise ValueError("PVFS sample timestamps are invalid")
+                timestamps.extend(block_times)
+                samples.extend(values)
+                # Rates use float32 storage, while native block endpoints use doubles.
+                end_tolerance = max(
+                    end_tolerance,
+                    (len(values) - 1) / rate * 2**-23,
+                    2 * math.ulp(block_times[-1]),
+                )
+                last_sample = (
+                    max(last_sample, block_times[-1])
+                    if last_sample is not None
+                    else block_times[-1]
+                )
+        if timestamps:
+            if timestamps[0] != start_sec + start_sub:
+                raise ValueError("PVFS first sample differs from channel start")
+            if not math.isclose(last_sample, end_sec + end_sub, rel_tol=0, abs_tol=end_tolerance):
+                raise ValueError("PVFS final sample differs from channel end")
+        return timestamps, samples
+    finally:
+        channel._pvfs_file.unlock()
+
+
+def _read_channel(idf) -> tuple[float, list[float]]:
     """Read every sample and the original start of an opened channel."""
     start = idf.get_start_time().to_seconds()
-    end = idf.get_end_time().to_seconds()
-    _ts, values = idf.get_data(
-        HighTime.from_seconds(start - 1.0), HighTime.from_seconds(end + 1.0)
-    )
-    return start, list(values)
+    _timestamps, values = read_channel_samples(idf)
+    return start, values
 
 
 def _read_device_preferences(reader) -> list[dict]:
@@ -527,9 +671,6 @@ def _verify(
     Checks channel identity + order, per-channel unit and rate, and that every
     channel holds exactly the total merged sample count. Returns that count.
     """
-    from pvfs_tools.Core.pvfs_binding import HighTime
-    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
-
     expected_total = sum(per_segment_counts)
     populated_segments = [
         (start, count)
@@ -542,13 +683,8 @@ def _verify(
         if populated_segments
         else None
     )
-    reader = PvfsDataFile()
-    try:
-        if not reader.open(str(temp_path)):
-            raise PvfsMergeError(
-                f"merged artifact at {temp_path} failed verification open"
-            )
-        channels = tuple(reader.get_channel_names())
+    with open_pvfs_reader(str(temp_path)) as reader:
+        channels = _channel_names(reader)
         if channels != schema.channels:
             raise PvfsMergeError(
                 f"merged artifact channels {channels} != expected {schema.channels}"
@@ -582,7 +718,7 @@ def _verify(
                     f"merged artifact channel {name!r} unit {actual_unit!r} != "
                     f"expected {unit!r}"
                 )
-            _channel_start, values = _read_channel(idf, HighTime)
+            _channel_start, values = _read_channel(idf)
             actual_count = len(values)
             if actual_count != expected_total:
                 raise PvfsMergeError(
@@ -596,8 +732,6 @@ def _verify(
                 raise PvfsMergeError(
                     f"merged artifact channel {name!r} timeline does not retain component bounds"
                 )
-    finally:
-        reader.close()
     return expected_total
 
 

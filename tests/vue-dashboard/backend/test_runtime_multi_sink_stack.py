@@ -12,6 +12,7 @@ import functools
 import dataclasses
 import pickle
 import queue
+from types import SimpleNamespace
 
 import pytest
 
@@ -88,12 +89,16 @@ def _csv_only_manifest(tmp_path) -> Manifest:
 
 
 def _runtime(manifest, **kwargs) -> MoreliaRuntime:
-    return MoreliaRuntime(
+    runtime = MoreliaRuntime(
         manifest=manifest,
         on_report=kwargs.pop("on_report", lambda report: None),
         importer=_importer,
         **kwargs,
     )
+    # These are sink tests with mock hardware and no device-config database.
+    # Serial discovery/persistence is covered by test_device_port_tracking.
+    runtime._resolve_stream_port = lambda index: manifest.device_flows[index].port
+    return runtime
 
 
 def test_stop_uses_graceful_dataflow_timeout_before_watchdog_close(tmp_path):
@@ -128,6 +133,51 @@ def test_stop_uses_graceful_dataflow_timeout_before_watchdog_close(tmp_path):
         ("watchdog_close", None),
     ]
     assert runtime.phase is RuntimePhase.STOPPED
+
+
+@pytest.mark.parametrize("cancel_stage", ["built", "preflight"])
+@pytest.mark.parametrize("ever_started,close_fails", [(False, False), (True, False), (False, True)])
+def test_cancelled_idle_stack_requires_actual_cleanup_before_teardown_proof(
+    tmp_path, cancel_stage, ever_started, close_fails,
+):
+    calls = []
+    runtime = _runtime(_csv_only_manifest(tmp_path))
+
+    def close_watchdog():
+        calls.append("close")
+        if close_fails:
+            raise OSError("device close failed")
+
+    def preflight(**kwargs):
+        runtime.request_cancel()
+
+    def build_stack():
+        runtime._flowgraph = SimpleNamespace(_ever_started_worker=ever_started)
+        runtime._pods = [SimpleNamespace(_port=None)]
+        runtime._watchdog = SimpleNamespace(
+            stop=lambda: calls.append("stop"),
+            close=close_watchdog,
+            preflight=preflight,
+            dataflow_monitor=SimpleNamespace(stop_dataflow=lambda **kwargs: {"ok": False}),
+        )
+        if cancel_stage == "built":
+            runtime.request_cancel()
+
+    runtime._build_stack = build_stack
+    with pytest.raises(RuntimeError, match="acquisition cancelled"):
+        runtime.preflight()
+    assert runtime.phase is RuntimePhase.IDLE
+    if ever_started or close_fails:
+        with pytest.raises(RuntimeError, match="cleanup is incomplete"):
+            runtime.close()
+        assert runtime._watchdog is not None
+        assert calls == (["stop"] if ever_started else ["stop", "close"])
+    else:
+        runtime.close()
+        assert calls == ["stop", "close"]
+    result = runtime.shutdown_result or {}
+    assert bool(result.get("teardown_confirmed")) is (not ever_started and not close_fails)
+    assert bool(result.get("no_workers_launched")) is (not ever_started)
 
 
 # ── Acceptance criterion 1: every selected sink builds in manifest order, one ──

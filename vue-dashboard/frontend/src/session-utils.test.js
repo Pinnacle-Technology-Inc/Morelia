@@ -3,6 +3,8 @@ import {
   countSessionsForTab,
   filterSessions,
   isRunningLifecycle,
+  normalizeSession,
+  operationOutcome,
   resolveSessionHealth,
   summarizeAttentionSessions,
 } from "./session-utils";
@@ -96,5 +98,50 @@ describe("session health resolution", () => {
     // disagreement — it must not render as the Stopped lifecycle.
     expect(resolveSessionHealth("stopped", "Active")).toBe("Not streaming");
     expect(resolveSessionHealth(null, "Stopped")).toBe("Not running");
+  });
+});
+
+it("preserves arrival time, recorded bounds and unknown timing", () => {
+  const bounds = [{ source_id: "source", sink_id: "csv",
+    first_sample_at: "2026-09-23T11:59:58Z", last_sample_at: "2026-09-23T12:00:15Z" }];
+  expect(normalizeSession({ id: 1, status: "active", duration_seconds: 60,
+    started_at: "2026-09-23T12:00:00Z", ended_at: "2026-09-23T12:00:15Z",
+    recording_bounds: bounds,
+  })).toMatchObject({ durationSeconds: 60, startedAt: "2026-09-23T12:00:00Z", endedAt: "2026-09-23T12:00:15Z", recordingBounds: bounds });
+  expect(normalizeSession({ id: 2, status: "completed", created_at: "2026-01-01T00:00:00Z" }))
+    .toMatchObject({ durationSeconds: null, startedAt: null, endedAt: null, recordingBounds: [] });
+});
+
+describe("stop outcome presentation", () => {
+  it("shows successful stops with and without explicit warnings", () => {
+    expect(operationOutcome({ command: "stop", state: "succeeded" }))
+      .toMatchObject({ label: "Completed", tone: "good", completed: true });
+    expect(operationOutcome({ command: "stop", state: "succeeded", details: {
+      warnings: [{ code: "unclean_shutdown", message: "Recording quality could not be confirmed." }],
+    } })).toMatchObject({ label: "Completed with warnings", tone: "warn" });
+  });
+
+  it.each(["failed", "uncertain"])("does not reinterpret %s from one owner's teardown receipt", (state) => {
+    const operation = { command: "stop", state, details: {
+      teardown_confirmed: true, output_integrity_confirmed: false,
+    } };
+    expect(operationOutcome(operation)).toMatchObject({
+      state, tone: "bad", completed: false,
+    });
+    expect(operation.state).toBe(state);
+    expect(operation.details.output_integrity_confirmed).toBe(false);
+    expect(operationOutcome({ ...operation, details: { ...operation.details, output_integrity_confirmed: true } }))
+      .toMatchObject({ state, tone: "bad", completed: false });
+  });
+
+  it.each(["failed", "uncertain"])("preserves %s without proof the session stopped", (state) => {
+    expect(operationOutcome({ command: "stop", state, details: { teardown_confirmed: false } }))
+      .toMatchObject({ state, tone: "bad", completed: false });
+  });
+
+  it("does not reinterpret failures of other commands", () => {
+    expect(operationOutcome({ command: "start", state: "failed", details: {
+      teardown_confirmed: true, output_integrity_confirmed: false,
+    } })).toMatchObject({ state: "failed", label: "Failed", tone: "bad", completed: false, warnings: [] });
   });
 });

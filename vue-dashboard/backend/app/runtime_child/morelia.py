@@ -7,6 +7,7 @@ only when ``MoreliaRuntime`` is constructed.
 from __future__ import annotations
 
 import importlib
+import math
 import os
 import queue
 import sys
@@ -15,7 +16,9 @@ import time
 import uuid
 from collections.abc import Callable, Mapping
 from contextlib import contextmanager, suppress
+from dataclasses import replace
 from enum import Enum
+from functools import partial
 from typing import Any
 
 import structlog
@@ -34,6 +37,10 @@ from app.runtime_child.driver import (
 from app.database import create_database_app, db
 from app.models.output_file import OutputFile
 from app.runtime_child.sink_factory import RuntimeContext, build_sink, build_sinks
+from app.runtime_child.device_connection import constructor_connection_kwargs, apply_or_defer_parameters, current_connection_address, current_connection_present, routing_key
+from app.runtime_child.queue_diagnostics import DiagnosticQueue, label_queue
+from app.services.connections import EndpointInventoryCache
+from app.domain.recovery_progress import normalize_recovery_progress
 from app.runtime_host.manifest import Manifest
 
 _log = structlog.get_logger(__name__)
@@ -72,7 +79,7 @@ class WorkerStartupError(RuntimeError):
 
 
 @contextmanager
-def _database_context():
+def _database_context(config_overrides=None):
     """App context for a parent-side ``output_files`` read, reusing any current one.
 
     The runtime child normally already runs inside an app context; recovery can
@@ -84,7 +91,7 @@ def _database_context():
     if has_app_context():
         yield
         return
-    context = create_database_app().app_context()
+    context = create_database_app(config_overrides=config_overrides).app_context()
     context.push()
     try:
         yield
@@ -130,6 +137,8 @@ def _normalize_sink_error(event: object) -> dict[str, Any]:
 
     return {
         "source_id": get("source_id"),
+        "output_id": get("output_id"),
+        "confirmed_samples": get("confirmed_samples"),
         "sink_id": get("sink_id"),
         "sink_class": get("sink_class"),
         "failure_kind": get("failure_kind"),
@@ -199,16 +208,12 @@ def _default_sink_error_queue() -> Any:
 
     Tests may inject an in-process ``queue.Queue`` instead.
     """
-    import multiprocessing
-
-    return multiprocessing.Queue()
+    return DiagnosticQueue("sink_error")
 
 
 def _default_source_error_queue() -> Any:
     """Create a cross-process queue for source-read status events."""
-    import multiprocessing
-
-    return multiprocessing.Queue()
+    return DiagnosticQueue("source_status")
 
 
 def _sink_field(value: object, limit: int) -> str | None:
@@ -224,7 +229,7 @@ def _sink_counter(value: object) -> int:
     return 0
 
 
-def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
+def _import_morelia() -> tuple[Callable, type, type, type, type, type, type, type]:
     """Import Morelia classes, optionally via ``MORELIA_SRC`` on ``sys.path``."""
 
     morelia_src = os.environ.get("MORELIA_SRC")
@@ -235,12 +240,14 @@ def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
     devices_module = importlib.import_module("Morelia.Devices")
     packet_module = importlib.import_module("Morelia.packet")
     from app.runtime_child.acknowledged_dataflow import AcknowledgedDataFlow
+    from app.runtime_child.acknowledged_monitor import AcknowledgedDataFlowMonitor
     from app.output.managed_csv_sink import ManagedCsvSink
+    from app.discovery.managed_pods import Pod8206HR, Pod8401HR
 
     return (
-        watchdog_module.Watchdog,
-        devices_module.Pod8206HR,
-        devices_module.Pod8401HR,
+        partial(watchdog_module.Watchdog, dataflow_monitor_factory=AcknowledgedDataFlowMonitor),
+        Pod8206HR,
+        Pod8401HR,
         AcknowledgedDataFlow,
         ManagedCsvSink,
         devices_module.Preamp,
@@ -280,13 +287,14 @@ class MoreliaRuntime:
         shutdown_timeout_sec: float = 15.0,
         importer: Callable[
             [],
-            tuple[type, type, type, type, type, type, type, type],
+            tuple[Callable, type, type, type, type, type, type, type],
         ] = _import_morelia,
         sink_delivery_outbox_factory: Any | None = None,
         sink_error_queue_factory: Callable[[], Any] = _default_sink_error_queue,
         source_error_queue_factory: Callable[[], Any] = _default_source_error_queue,
     ) -> None:
         self._manifest = manifest
+        self._database_config = None
         self._on_report = on_report
         self._failure_threshold = failure_threshold
         self._max_heartbeat_age_sec = max_heartbeat_age_sec
@@ -321,37 +329,125 @@ class MoreliaRuntime:
         self._flowgraph: Any | None = None
         self._watchdog: Any | None = None
         self._watchdog_thread: threading.Thread | None = None
+        self._cancelled = lambda: False
+        self._local_cancel = threading.Event()
+        self._on_recording = None
+        self._on_first_data = None
+        self._on_runtime_failure = None
+        self._recording_queue = None
+        self._recording_thread = None
+        self._recording_closed = threading.Event()
+        self._arrival_seen = threading.Event()
+        self.shutdown_result = None
         self._startup_event = threading.Event()
         self._startup_failure: WorkerStartupError | None = None
         self._nonhealthy_streak_by_device = {device_id: 0 for device_id in self._device_ids}
+        self._nonhealthy_since_by_device: dict[str, float] = {}
 
         # Latest sink-write failures, kept separate from device/stream health.
         self._sink_error_queue: Any | None = None
         self._sink_reports: dict[tuple[str, str], SinkReport] = {}
         self._sink_seq: dict[tuple[str, str], int] = {}
+        self._sink_recovery_attempted: set[str] = set()
+        self._failed_output_ids: set[str] = set()
         self._source_error_queue: Any | None = None
         self._source_status_by_device: dict[str, dict[str, object]] = {}
         self._source_failure_by_device: dict[str, dict[str, object]] = {}
         self._source_recovery_by_device: dict[str, list[dict[str, object]]] = {}
         self._pending_recovery_by_device: dict[str, str] = {}
         self._device_id_by_port = {
-            str(device_flow.port).lower(): device_flow.device_id
+            routing_key(str(device_flow.port), native=bool(getattr(device_flow, "connection", None) and device_flow.connection["transport"] == "d2xx")): device_flow.device_id
             for device_flow in manifest.device_flows
         }
+        self._port_map_lock = threading.Lock()
+        self._presence_inventory = EndpointInventoryCache()
+
+    def bind_lifecycle(self, *, on_recording, cancelled, on_failure=None, on_first_data=None):
+        self._on_recording = on_recording
+        self._on_first_data = on_first_data
+        self._on_runtime_failure = on_failure
+        self._cancelled = cancelled
+
+    def request_cancel(self):
+        # Never take recovery's lifecycle locks here: native recovery may block.
+        self._local_cancel.set()
+        self._startup_event.set()
+        flow = self._flowgraph
+        if flow is not None:
+            publish = getattr(flow, "publish_shutdown_deadline", None)
+            if callable(publish):
+                publish(time.monotonic() + self._shutdown_timeout_sec)
+            for event in list(getattr(flow, "_manual_stop_events", [])) + list(getattr(flow, "_registered_stop_events", [])):
+                if event is not None:
+                    event.set()
+
+    def _check_cancelled(self):
+        if self._local_cancel.is_set() or self._cancelled():
+            raise RuntimeError("acquisition cancelled")
+
+    def _recording_loop(self):
+        from queue import Empty
+        while not self._recording_closed.is_set():
+            try:
+                record = self._recording_queue.get(timeout=.05)
+            except Empty:
+                continue
+            try:
+                self._handle_recording_event(record)
+            except Exception:
+                _log.error("arrival or recording evidence failed", exc_info=True)
+                self.request_cancel()
+                if self._on_runtime_failure is not None:
+                    self._on_runtime_failure()
+                return
+
+    def _handle_recording_event(self, record):
+        if (record.get("event_type") not in {"pvfs_progress", "pvfs_gap"}
+                and record.get("output_id") and record.get("confirmed_samples") is not None):
+            from app.repositories.output_files import record_pvfs_progress
+
+            with _database_context(self._database_config):
+                record_pvfs_progress(record["output_id"], record["confirmed_samples"])
+            if (record.get("first_sample_at") is not None
+                    and record.get("last_sample_at") is not None
+                    and record["output_id"] not in self._failed_output_ids):
+                self._sink_recovery_attempted.discard(record.get("source_id"))
+        if record.get("event_type") in {"pvfs_progress", "pvfs_gap"}:
+            from app.repositories.output_files import mark_pvfs_recording_gap, record_pvfs_progress
+
+            with _database_context(self._database_config):
+                if record["event_type"] == "pvfs_gap":
+                    mark_pvfs_recording_gap(
+                        record["output_id"], record["confirmed_samples"],
+                        record.get("termination_reason", "writer_failure"),
+                    )
+                else:
+                    record_pvfs_progress(record["output_id"], record["confirmed_samples"])
+        elif record.get("event_type") == "first_data":
+            if self._on_first_data is not None:
+                self._on_first_data(record["arrived_at"])
+            self._arrival_seen.set()
+        elif (self._on_recording is not None and record.get("first_sample_at") is not None
+              and record.get("last_sample_at") is not None):
+            self._on_recording(record)
 
     @property
     def phase(self) -> RuntimePhase:
         return self._phase
 
     def preflight(self) -> None:
+        self._check_cancelled()
         self._require(RuntimePhase.IDLE)
         with self._hardware_boundary("preflight"):
             self._build_stack()
             assert self._watchdog is not None
+            self._check_cancelled()
             self._watchdog.preflight(timeout_sec=self._timeout_sec)
+            self._check_cancelled()
         self._emit_all(StreamStatus.HEALTHY, phase=RuntimePhase.PREFLIGHT)
 
     def start(self) -> None:
+        self._check_cancelled()
         self._require(RuntimePhase.PREFLIGHT)
         assert self._flowgraph is not None
         assert self._watchdog is not None
@@ -359,6 +455,7 @@ class MoreliaRuntime:
         with self._hardware_boundary("start"):
             self._flowgraph.collect()
         self._phase = RuntimePhase.RUNNING
+        self._check_cancelled()
         self._startup_event.clear()
         self._startup_failure = None
         self._watchdog_thread = threading.Thread(
@@ -368,12 +465,26 @@ class MoreliaRuntime:
             daemon=True,
         )
         self._watchdog_thread.start()
+        first_packet_timeout = self._first_packet_timeout_sec
+        if any(
+            (flow.connection or {}).get("transport") == "d2xx"
+            or (flow.connection is None and flow.parameters.get("use_d2xx", False))
+            for flow in self._manifest.device_flows
+        ):
+            from Morelia.Watchdog.watchdog import NATIVE_READINESS_TIMEOUT_SEC
+
+            first_packet_timeout = max(first_packet_timeout, NATIVE_READINESS_TIMEOUT_SEC)
         startup_timeout = (
-            self._first_packet_timeout_sec
+            first_packet_timeout
             + self._report_interval_sec
             + self._stream_interval_sec * max(1, self._failure_threshold)
         )
-        if not self._startup_event.wait(timeout=startup_timeout):
+        wait_until = time.monotonic() + startup_timeout
+        while not self._startup_event.wait(timeout=.05):
+            self._check_cancelled()
+            if time.monotonic() >= wait_until:
+                break
+        if not self._startup_event.is_set():
             self._startup_failure = WorkerStartupError(
                 device_id=None,
                 sink_id=None,
@@ -383,6 +494,7 @@ class MoreliaRuntime:
                     f"{startup_timeout:.1f} seconds"
                 ),
             )
+        self._check_cancelled()
         if self._startup_failure is not None:
             failure = self._startup_failure
             _log.error(
@@ -402,6 +514,7 @@ class MoreliaRuntime:
         )
 
     def recover(self, recovery_id: str, device_id: str) -> None:
+        self._check_cancelled()
         self._require(RuntimePhase.RUNNING)
         if device_id not in self._stream_by_device:
             raise ValueError(
@@ -427,6 +540,7 @@ class MoreliaRuntime:
                 result.get("error") or result.get("status") or "Morelia recovery failed"
             )
 
+        self._sink_recovery_attempted.discard(device_id)
         self._pending_recovery_by_device[device_id] = recovery_id
         self._emit_from_watchdog_report(
             self._watchdog.get_report(verbose=True),
@@ -434,13 +548,34 @@ class MoreliaRuntime:
         )
 
     def stop(self) -> None:
-        self._require(RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING, RuntimePhase.STOPPED)
+        self.request_cancel()
+        if self._teardown_confirmed():
+            return self.shutdown_result
+        # Cancellation can arrive after stack construction, before preflight
+        # succeeds. That IDLE stack still needs the same verified teardown.
+        self._require(RuntimePhase.IDLE, RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING, RuntimePhase.STOPPED, RuntimePhase.CLOSED)
+        never_launched = (
+            getattr(self._flowgraph, "_ever_started_worker", None) is False
+            and not getattr(self._flowgraph, "_prior_shutdown_results", ())
+            and all(getattr(worker, "_popen", True) is None
+                    and getattr(worker, "pid", None) is None
+                    for worker in getattr(self._flowgraph, "_workers", ()) if worker is not None)
+        )
+        shutdown_error = None
         if self._watchdog is not None:
             self._watchdog.stop()
+            watchers = [*getattr(self._watchdog, "_stream_watchers", {}).values(),
+                        *getattr(self._watchdog, "_device_watchers", {}).values()]
+            if any(watcher.is_alive() for watcher in watchers):
+                self._cleanup_failed("Watchdog recovery watchers have not exited")
+                raise RuntimeError("Watchdog recovery watchers have not exited")
             if self._watchdog_thread is not None:
                 self._watchdog_thread.join(
                     timeout=self._timeout_sec + get_config().WATCHDOG_THREAD_JOIN_GRACE_SECONDS
                 )
+                if self._watchdog_thread.is_alive():
+                    self._cleanup_failed("Watchdog report thread has not exited")
+                    raise RuntimeError("Watchdog report thread has not exited")
                 self._watchdog_thread = None
             shutdown_error: Exception | None = None
             monitor = getattr(self._watchdog, "dataflow_monitor", None)
@@ -449,6 +584,7 @@ class MoreliaRuntime:
             if callable(stop_dataflow):
                 try:
                     result = stop_dataflow(join_timeout_sec=self._shutdown_timeout_sec)
+                    self.shutdown_result = result
                     elapsed = time.monotonic() - started_at
                     self._emit_shutdown_transcript(result, elapsed_seconds=elapsed)
                     ok = not isinstance(result, Mapping) or result.get("ok") is True
@@ -467,31 +603,134 @@ class MoreliaRuntime:
                         error_type=type(exc).__name__,
                         reason=str(exc),
                     )
-            # Always close the watchdog so monitor/source resources are released.
-            self._watchdog.close()
+            # Confirm parent-owned native handles separately from worker exit.
+            # Constructors can fail before assigning a handle to pod._port.
+            cleanup_errors = self._close_pod_handles()
+            if cleanup_errors:
+                self.shutdown_result = {**(self.shutdown_result or {}), "ok": False,
+                                        "teardown_confirmed": False,
+                                        "cleanup_errors": cleanup_errors}
+                shutdown_error = RuntimeError("Native handle cleanup remains unresolved")
+            elif never_launched and not callable(getattr(self._flowgraph, "worker_inventory_complete", None)):
+                self._close_sinks()
+                never_started = [{"stream_index": index, "ok": True,
+                                  "worker_status": "not_started",
+                                  "worker_started": False, "worker_exited": False,
+                                  "worker_exitcode": None, "worker_accounted": True,
+                                  "descendants_teardown_confirmed": True,
+                                  "teardown_confirmed": True}
+                                 for index, _ in enumerate(self._manifest.device_flows)]
+                self.shutdown_result = {**(self.shutdown_result or {}),
+                                        "ok": True, "teardown_confirmed": True,
+                                        "no_workers_launched": True,
+                                        "worker_inventory_complete": True,
+                                        "stream_results": never_started,
+                                        "previous_stream_results": []}
+                shutdown_error = None
+            elif isinstance(self.shutdown_result, Mapping):
+                # Earlier handle failure must not poison a later successful
+                # retry, nor allow current clean rows to hide old generations.
+                self.shutdown_result.pop("cleanup_errors", None)
+            if self._teardown_confirmed():
+                try:
+                    # Legacy Watchdog.close suppresses errors for standalone
+                    # clients. The dashboard needs affirmative Manager evidence.
+                    from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
+                    if isinstance(monitor, DataFlowMonitor):
+                        monitor.close(strict=True)
+                    self._watchdog.close()
+                except Exception as exc:
+                    self._cleanup_failed(f"watchdog close: {exc}")
+                    raise
             if shutdown_error is not None:
                 raise shutdown_error
+        else:
+            cleanup_errors = self._close_pod_handles()
+            if self._flowgraph is None and not cleanup_errors:
+                self.shutdown_result = {"ok": True, "teardown_confirmed": True,
+                                        "no_workers_launched": True,
+                                        "worker_inventory_complete": True,
+                                        "stream_results": [], "previous_stream_results": []}
+            elif cleanup_errors:
+                self.shutdown_result = {"ok": False, "teardown_confirmed": False,
+                                        "cleanup_errors": cleanup_errors}
+                raise RuntimeError("Native handle cleanup remains unresolved")
         self._close_sinks()
         self._emit_all(StreamStatus.HEALTHY, phase=RuntimePhase.STOPPED, comms=CommsStatus.STOPPED)
 
     def close(self) -> None:
-        if self._phase not in (RuntimePhase.STOPPED, RuntimePhase.CLOSED):
+        if not self._teardown_confirmed():
             try:
                 self.stop()
             except Exception:
                 _log.error(
-                    "stop during close failed — force-closing watchdog and sinks",
+                    "stop during close failed — retaining unresolved ownership",
                     dataflow_id=self._manifest.dataflow_id,
                     phase=self._phase.value,
                     exc_info=True,
                 )
-                if self._watchdog is not None:
-                    with suppress(Exception):
-                        self._watchdog.close()
-                self._close_sinks()
+        if not self._teardown_confirmed():
+            raise RuntimeError("Runtime cleanup is incomplete; a later Stop must retry")
+        try:
+            self._close_runtime_resources()
+        except Exception as exc:
+            self._cleanup_failed(f"runtime close: {type(exc).__name__}: {exc}")
+            raise
+        self.shutdown_result["resources_teardown_confirmed"] = True
+        self._phase = RuntimePhase.CLOSED
+
+    def _close_runtime_resources(self) -> None:
+        self._recording_closed.set()
+        if self._recording_thread is not None:
+            self._recording_thread.join(timeout=1)
+            if self._recording_thread.is_alive():
+                raise RuntimeError("Recording callback thread has not exited")
+            self._recording_thread = None
+        if self._recording_queue is not None:
+            from queue import Empty
+            while True:
+                try:
+                    record = self._recording_queue.get_nowait()
+                except Empty:
+                    break
+                self._handle_recording_event(record)
+            self._recording_queue.close()
+            self._recording_queue.join_thread()
+            self._recording_queue = None
         self._close_sink_error_queue()
         self._close_source_error_queue()
-        self._phase = RuntimePhase.CLOSED
+        # Recovery can leave earlier source generations outside the current
+        # network. Release their parent-owned command queues after workers stop.
+        for pod in self._pods:
+            if getattr(pod, "_backend_managed", False):
+                pod.cleanup()
+
+    def _cleanup_failed(self, reason):
+        self.shutdown_result = {**(self.shutdown_result or {}), "ok": False,
+                                "teardown_confirmed": False,
+                                "resources_teardown_confirmed": False,
+                                "cleanup_errors": [reason]}
+
+    def _close_pod_handles(self):
+        errors = []
+        for pod in self._pods:
+            try:
+                close = getattr(pod, "close_port", None)
+                if callable(close):
+                    close()
+            except Exception as exc:
+                errors.append(f"{getattr(pod, 'port', '?')}: {type(exc).__name__}: {exc}")
+        return errors
+
+    def _teardown_confirmed(self):
+        result = self.shutdown_result
+        if not isinstance(result, Mapping):
+            return False
+        if "teardown_confirmed" in result:
+            return result["teardown_confirmed"] is True
+        rows = [*result.get("stream_results", ()), *result.get("previous_stream_results", ())]
+        return (all(row.get("teardown_confirmed") is True or row.get("ok") is True for row in rows)
+                if rows else result.get("ok") is True)
 
     def _emit_shutdown_transcript(self, result: object, *, elapsed_seconds: float) -> None:
         """Print each parent-correlated shutdown action and one stream summary."""
@@ -579,38 +818,44 @@ class MoreliaRuntime:
     def _close_sink_error_queue(self) -> None:
         """Close the sink-error queue if open."""
         q = self._sink_error_queue
-        self._sink_error_queue = None
         if q is None:
             return
         close = getattr(q, "close", None)
         if callable(close):
-            with suppress(Exception):
-                close()
+            close()
         join_thread = getattr(q, "join_thread", None)
         if callable(join_thread):
-            with suppress(Exception):
-                join_thread()
+            join_thread()
+        self._sink_error_queue = None
 
     def _close_source_error_queue(self) -> None:
         """Close the source-status queue if open."""
         q = self._source_error_queue
-        self._source_error_queue = None
         if q is None:
             return
         close = getattr(q, "close", None)
         if callable(close):
-            with suppress(Exception):
-                close()
+            close()
         join_thread = getattr(q, "join_thread", None)
         if callable(join_thread):
-            with suppress(Exception):
-                join_thread()
+            join_thread()
+        self._source_error_queue = None
 
     # -- stack construction -------------------------------------------------
 
     def _build_stack(self) -> None:
         if self._watchdog is not None:
             return
+
+        # Watchdog threads must use this runtime's database, including factory
+        # overrides, when they refresh an address or read sink continuation data.
+        from flask import current_app, has_app_context
+
+        if has_app_context():
+            self._database_config = {
+                "SQLALCHEMY_DATABASE_URI": current_app.config["SQLALCHEMY_DATABASE_URI"],
+                "SQLITE_BUSY_TIMEOUT_MS": current_app.config.get("SQLITE_BUSY_TIMEOUT_MS", 5_000),
+            }
 
         (
             Watchdog,
@@ -629,7 +874,15 @@ class MoreliaRuntime:
                 for device_flow in self._manifest.device_flows
             )
             for device_flow in self._manifest.device_flows:
+                self._check_cancelled()
                 device_type = self._device_type(device_flow)
+                construction_flow = device_flow
+                if self._manifest.session_id is not None:
+                    # Recreating a dashboard host also reuses a historical
+                    # manifest. Refresh its transport binding just like a stream
+                    # restart; never change the manifest used for reconciliation.
+                    port = self._resolve_stream_port(len(network))
+                    construction_flow = replace(device_flow, port=port)
                 pod = self._build_pod(
                     device_type,
                     Pod8206HR,
@@ -637,11 +890,13 @@ class MoreliaRuntime:
                     Preamp,
                     PrimaryChannelMode,
                     SecondaryChannelMode,
-                    device_flow,
+                    construction_flow,
                 )
                 # Track immediately so rollback can close the port if sinks fail next.
                 self._pods.append(pod)
                 self._pod_by_stream[len(network)] = pod
+                if construction_flow.port != device_flow.port:
+                    self._track_device_port(device_flow.device_id, construction_flow.port)
                 runtime_context = self._runtime_context(CSVSink, device_flow, device_type, pod)
                 sinks = build_sinks(device_flow.sinks, pod, runtime_context)
                 self._sinks.extend(sinks)
@@ -652,21 +907,30 @@ class MoreliaRuntime:
             sink_error_sender = _SinkErrorSender(self._sink_error_queue)
             self._source_error_queue = self._source_error_queue_factory()
             source_error_sender = _SourceErrorSender(self._source_error_queue)
+            for queue in (self._sink_error_queue, self._source_error_queue):
+                label_queue(queue, dataflow_id=self._manifest.dataflow_id)
 
             flowgraph_kwargs = {
                 "on_sink_error": sink_error_sender,
                 "on_source_error": source_error_sender,
             }
             if getattr(DataFlow, "supports_source_recovery_window", False):
-                # Source-level port reopen is itself a recovery action. Keep it
-                # automatic only for Automate; Recommend must wait for the
-                # explicit stream command after the watchdog stops the worker.
-                flowgraph_kwargs["source_recovery_window_sec"] = (
-                    self._max_heartbeat_age_sec
-                    if self._manifest.policy == "automate"
-                    else None
-                )
+                flowgraph_kwargs["source_recovery_window_sec"] = None
+                if getattr(DataFlow, "supports_identity_reconnect", False):
+                    flowgraph_kwargs["source_recovery_window_sec"] = self._max_heartbeat_age_sec
+                    flowgraph_kwargs["source_reconnect_configs"] = {
+                        index: (flow, self._device_type(flow))
+                        for index, flow in enumerate(self._manifest.device_flows)
+                    }
+            self._check_cancelled()
+            if getattr(DataFlow, "supports_recording_acknowledgements", False):
+                self._recording_queue = DiagnosticQueue("recording_ack", dataflow_id=self._manifest.dataflow_id)
+                flowgraph_kwargs["recording_queue"] = self._recording_queue
             self._flowgraph = DataFlow(network, **flowgraph_kwargs)
+            self._flowgraph._acquisition_guard = self._check_cancelled
+            if self._recording_queue is not None:
+                self._recording_thread = threading.Thread(target=self._recording_loop, daemon=True, name="sink-recording")
+                self._recording_thread.start()
             self._watchdog = Watchdog(
                 flowgraph=self._flowgraph,
                 failure_threshold=self._failure_threshold,
@@ -675,6 +939,8 @@ class MoreliaRuntime:
                 recovery_policy=self._manifest.policy,
                 reconstruction_hook=self._reconstruct_stream,
                 sample_rates=sample_rates,
+                port_resolver=self._resolve_stream_port,
+                port_presence_checker=self._stream_port_present,
             )
         except BaseException:
             self._rollback_stack_construction()
@@ -696,12 +962,13 @@ class MoreliaRuntime:
         as a first construction and mints component 0, which is correct.
         """
         resume: dict[str, dict[str, object]] = {}
-        with _database_context():
+        with _database_context(self._database_config):
             for sink in device_flow.sinks:
                 row = db.session.scalars(
                     db.select(OutputFile)
                     .where(
                         OutputFile.dataflow_id == self._manifest.dataflow_id,
+                        OutputFile.device_id == device_flow.device_id,
                         OutputFile.sink_id == sink.sink_id,
                     )
                     .order_by(OutputFile.segment_index.desc())
@@ -714,6 +981,40 @@ class MoreliaRuntime:
                     "segment_index": row.segment_index,
                 }
         return resume
+
+    def _device_for_source_port(self, source_port: str):
+        exact = self._device_id_by_port.get(source_port)
+        if exact is not None:
+            return exact
+        folded = self._device_id_by_port.get(source_port.lower())
+        for flow in self._manifest.device_flows:
+            if flow.device_id == folded and getattr(flow, "connection", None) and flow.connection["transport"] == "d2xx":
+                return None
+        return folded
+
+    def _track_device_port(self, device_id: str, port: str) -> None:
+        """Update status routing when independently watched streams renumber."""
+        with self._port_map_lock:
+            self._device_id_by_port = {
+                **{address: identity for address, identity in self._device_id_by_port.items()
+                   if identity != device_id},
+                routing_key(port, native=any(flow.device_id == device_id and getattr(flow, "connection", None) and flow.connection["transport"] == "d2xx" for flow in self._manifest.device_flows)): device_id,
+            }
+
+    def _resolve_stream_port(self, stream_index: int) -> str:
+        """Refresh the dashboard's observed address without editing run history."""
+        device_flow = self._manifest.device_flows[stream_index]
+        self._check_cancelled()
+        with _database_context(self._database_config):
+            return current_connection_address(device_flow, self._device_type(device_flow))
+
+    def _stream_port_present(self, stream_index: int) -> bool:
+        device_flow = self._manifest.device_flows[stream_index]
+        self._check_cancelled()
+        with _database_context(self._database_config):
+            return current_connection_present(
+                device_flow, self._device_type(device_flow), inventory=self._presence_inventory,
+            )
 
     def _reconstruct_stream(self, stream_index: int):
         """Rebuild one stream's source and sinks for a watchdog recovery restart.
@@ -733,6 +1034,13 @@ class MoreliaRuntime:
 
         Output: tuple (source, sinks) as the hook contract requires.
         """
+        monitor = getattr(self._watchdog, "dataflow_monitor", None)
+        flowgraph = getattr(monitor, "flowgraph", self._flowgraph)
+        previous = getattr(flowgraph, "_shutdown_results", {}).get(stream_index)
+        if previous is None or not (
+            previous.get("worker_exited") is True or previous.get("teardown_confirmed") is True
+        ):
+            raise RuntimeError("Cannot reconstruct a stream before its acquisition worker exits")
         (
             _Watchdog,
             Pod8206HR,
@@ -746,6 +1054,9 @@ class MoreliaRuntime:
 
         device_flow = self._manifest.device_flows[stream_index]
         device_type = self._device_type(device_flow)
+        # Only override the transport address for construction. Settings, sink
+        # identities and hashes continue to come from the immutable manifest.
+        current_port = self._resolve_stream_port(stream_index)
         pod = self._build_pod(
             device_type,
             Pod8206HR,
@@ -753,13 +1064,14 @@ class MoreliaRuntime:
             Preamp,
             PrimaryChannelMode,
             SecondaryChannelMode,
-            device_flow,
+            replace(device_flow, port=current_port),
         )
 
         # Track before building sinks so a sink failure still leaves the port
         # closeable by the rollback path, matching _build_stack's ordering.
         self._pods.append(pod)
         self._pod_by_stream[stream_index] = pod
+        self._track_device_port(device_flow.device_id, current_port)
         runtime_context = self._runtime_context(
             CSVSink,
             device_flow,
@@ -768,6 +1080,9 @@ class MoreliaRuntime:
             segment_resume=self._segment_resume(device_flow),
         )
         sinks = build_sinks(device_flow.sinks, pod, runtime_context)
+        for sink in sinks:
+            sink._predecessor_released = previous.get("teardown_confirmed") is True
+            sink._predecessor_worker_exited = previous.get("worker_exited") is True
         self._sinks.extend(sinks)
         return pod, sinks
 
@@ -786,7 +1101,8 @@ class MoreliaRuntime:
         self._sinks.clear()
 
         for pod in reversed(self._pods):
-            close = getattr(pod, "close_port", None)
+            close = (getattr(pod, "cleanup", None) if getattr(pod, "_backend_managed", False)
+                     else getattr(pod, "close_port", None))
             if not callable(close):
                 close = getattr(pod, "close", None)
             if callable(close):
@@ -879,15 +1195,11 @@ class MoreliaRuntime:
         pod = Pod8206HR(
             device_flow.port,
             preamp_gain,
-            baudrate=baudrate,
+            **constructor_connection_kwargs(device_flow, legacy_baudrate=baudrate, legacy_use_d2xx=use_d2xx),
             device_name=device_name,
-            use_d2xx=use_d2xx,
             sample_rate=sample_rate,
         )
-        for key, value in params.items():
-            if not hasattr(pod, key):
-                raise ValueError(f"unsupported Pod8206HR parameter: {key!r}")
-            setattr(pod, key, value)
+        apply_or_defer_parameters(pod, params, device_flow)
         return pod
 
     @staticmethod
@@ -928,15 +1240,11 @@ class MoreliaRuntime:
             secondary_channel_modes,
             ss_gain=ss_gain,
             preamp_gain=preamp_gain,
-            baudrate=baudrate,
+            **constructor_connection_kwargs(device_flow, legacy_baudrate=baudrate, legacy_use_d2xx=use_d2xx),
             device_name=device_name,
-            use_d2xx=use_d2xx,
             sample_rate=sample_rate,
         )
-        for key, value in params.items():
-            if not hasattr(pod, key):
-                raise ValueError(f"unsupported Pod8401HR parameter: {key!r}")
-            setattr(pod, key, value)
+        apply_or_defer_parameters(pod, params, device_flow)
         return pod
 
     @staticmethod
@@ -956,24 +1264,11 @@ class MoreliaRuntime:
 
     @staticmethod
     def _csv_fieldnames(device_type: DeviceType, pod: Any) -> list[str]:
-        if device_type is DeviceType.POD8206HR:
-            return ["time", "EEG1", "EEG2", "EEG3/EMG", "TTL1", "TTL2", "TTL3", "TTL4"]
-        if device_type is DeviceType.POD8401HR:
-            channel_names = ("A", "B", "C", "D")
-            mapper = getattr(type(pod), "get_channel_map_for_preamp_device", None)
-            if callable(mapper) and getattr(pod, "preamp", None) is not None:
-                channel_names = tuple(mapper(pod.preamp).values())
-            return [
-                "time",
-                *channel_names,
-                "aEXT0",
-                "aEXT1",
-                "aTTL1",
-                "aTTL2",
-                "aTTL3",
-                "aTTL4",
-            ]
-        raise ValueError(f"unsupported Morelia device type: {device_type.value!r}")
+        from app.output.csv_schema import csv_fieldnames
+
+        if device_type not in (DeviceType.POD8206HR, DeviceType.POD8401HR):
+            raise ValueError(f"unsupported Morelia device type: {device_type.value!r}")
+        return list(csv_fieldnames(device_type, pod))
 
     # -- reports ------------------------------------------------------------
 
@@ -991,6 +1286,8 @@ class MoreliaRuntime:
                     reason=str(exc),
                 )
                 self._startup_event.set()
+            if self._on_runtime_failure is not None:
+                self._on_runtime_failure()
             _log.error(
                 "morelia watchdog thread died",
                 dataflow_id=self._manifest.dataflow_id,
@@ -1082,7 +1379,7 @@ class MoreliaRuntime:
                 and packet_count > 0
             )
             all_verified = all_verified and verified
-        if all_verified:
+        if all_verified and (self._manifest.duration_seconds is None or self._arrival_seen.is_set()):
             self._startup_event.set()
 
     def _log_watchdog_status(
@@ -1110,6 +1407,8 @@ class MoreliaRuntime:
             health = stream.get("health")
             recovery = stream.get("recovery")
             recovery = recovery if isinstance(recovery, dict) else {}
+            progress = recovery.get("progress") or {}
+            attempt = recovery.get("attempt") or {}
             failure = stream.get("failure")
             failure = failure if isinstance(failure, dict) else {}
             heartbeat = stream.get("heartbeat")
@@ -1140,9 +1439,9 @@ class MoreliaRuntime:
                     or heartbeat.get("reason")
                     or disconnect.get("reason")
                 ),
-                recovery_stage=recovery.get("status"),
+                recovery_stage=progress.get("stage") or recovery.get("status"),
                 policy_mode=recovery.get("policy"),
-                recovery_attempt=stream.get("consecutive_nonhealthy_ticks"),
+                recovery_attempt=attempt.get("current"),
                 failure_count=failure.get("count"),
                 failure_threshold=failure.get("threshold"),
                 error_message=failure.get("last_error"),
@@ -1163,14 +1462,17 @@ class MoreliaRuntime:
     def _watchdog_diagnostics(self, stream_reports: list[object]) -> dict[str, object]:
         """Project Morelia stream reports into a small operator-facing payload."""
         streams: list[dict[str, object]] = []
+        observed_at = time.monotonic()
         for index, device_id in enumerate(self._device_ids):
             raw = stream_reports[index] if index < len(stream_reports) else {}
             stream = raw if isinstance(raw, dict) else {}
             health = self._map_stream_status(stream.get("stream_health"))
             if health is StreamStatus.HEALTHY:
                 self._nonhealthy_streak_by_device[device_id] = 0
+                self._nonhealthy_since_by_device.pop(device_id, None)
             else:
                 self._nonhealthy_streak_by_device[device_id] += 1
+                self._nonhealthy_since_by_device.setdefault(device_id, observed_at)
 
             signals = stream.get("signals")
             signals = signals if isinstance(signals, dict) else {}
@@ -1190,6 +1492,13 @@ class MoreliaRuntime:
                 hardware_present = None
             disconnect = action_detail.get("disconnect")
             disconnect = disconnect if isinstance(disconnect, dict) else None
+            pending = getattr(self, "_source_failure_by_device", {}).get(device_id)
+            if pending is not None and pending.get("restart_required"):
+                disconnect = self._complete_source_restart(
+                    device_id, pending, health, heartbeat, worker, disconnect
+                )
+                if disconnect is not None:
+                    action_name = "connection_restored"
             source_recoveries = self._source_recovery_by_device.get(device_id, [])
             source_recovery = source_recoveries[0] if source_recoveries else None
             if source_recovery is not None and action_name == "connection_restored":
@@ -1256,6 +1565,9 @@ class MoreliaRuntime:
                     ),
                     "action": action_name,
                     "consecutive_nonhealthy_ticks": self._nonhealthy_streak_by_device[device_id],
+                    "nonhealthy_seconds": max(
+                        0.0, observed_at - self._nonhealthy_since_by_device.get(device_id, observed_at)
+                    ),
                     "failure": {
                         "count": failure.get("count"),
                         "threshold": failure.get("threshold"),
@@ -1285,12 +1597,11 @@ class MoreliaRuntime:
                         "remaining_sec": startup.get("remaining_sec"),
                     },
                     "recovery": {
+                        "progress": normalize_recovery_progress(stream.get("recovery_progress")),
                         "status": _bounded_text(recovery_event.get("status"), 80),
                         "policy": _bounded_text(recovery_event.get("recovery_policy"), 80),
                         "hardware_present": hardware_present,
-                        # The watcher's real restart budget as {"current", "max"}
-                        # — distinct from consecutive_nonhealthy_ticks above,
-                        # which measures elapsed time, not attempts.
+                        # Restart attempts are independent of report frequency.
                         "attempt": _attempt_counts(recovery_event.get("recovery_attempt")),
                     },
                 }
@@ -1354,6 +1665,7 @@ class MoreliaRuntime:
         q = self._sink_error_queue
         if q is None:
             return
+        failed_devices = set()
         while True:
             try:
                 event = q.get_nowait()
@@ -1366,6 +1678,45 @@ class MoreliaRuntime:
                 continue
             report = self._sink_report_from_event(event)
             self._sink_reports[(report.source_id, report.sink_id)] = report
+            if event.get("state") == "terminal":
+                candidates = [
+                    flow for flow in self._manifest.device_flows
+                    if any(sink.sink_id == report.sink_id and sink.type is SinkType.PVFS
+                           for sink in flow.sinks)
+                ]
+                matched = [flow for flow in candidates if flow.device_id == report.source_id]
+                if not matched and len(candidates) == 1:
+                    matched = candidates
+                if not matched:
+                    continue
+                output_id = event.get("output_id")
+                if output_id is not None:
+                    confirmed = event.get("confirmed_samples")
+                    if isinstance(confirmed, int) and not isinstance(confirmed, bool):
+                        from app.repositories.output_files import mark_pvfs_recording_gap
+
+                        with _database_context(self._database_config):
+                            mark_pvfs_recording_gap(output_id, confirmed, "writer_failure")
+                    if output_id in self._failed_output_ids:
+                        continue
+                    self._failed_output_ids.add(output_id)
+                failed_devices.update(flow.device_id for flow in matched)
+        policy = getattr(self._manifest.policy, "value", self._manifest.policy)
+        if str(policy).lower() != "automate" or self._phase is not RuntimePhase.RUNNING:
+            return
+        for device_id in sorted(failed_devices):
+            if device_id in self._sink_recovery_attempted or self._local_cancel.is_set():
+                continue
+            self._sink_recovery_attempted.add(device_id)
+            try:
+                result = self._watchdog.stream_command(
+                    self._stream_by_device[device_id], command="restart_stream",
+                    requested_by="automate", blocking=True,
+                )
+            except Exception as exc:
+                result = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+            if not result.get("ok"):
+                _log.error("PVFS recovery requires attention", device_id=device_id, result=result)
 
     def _current_source_read(self, device_id: str) -> dict[str, object] | None:
         """Return this device's source-read status, clearing a stale degraded latch."""
@@ -1380,9 +1731,71 @@ class MoreliaRuntime:
         age_sec = (time.time_ns() - timestamp_ns) / 1_000_000_000
         if age_sec > get_config().SOURCE_STATUS_STALE_AFTER_SECONDS:
             self._source_status_by_device.pop(device_id, None)
-            getattr(self, "_source_failure_by_device", {}).pop(device_id, None)
             return None
         return status
+
+    def _complete_source_restart(
+        self,
+        device_id: str,
+        pending: dict[str, object],
+        health: StreamStatus,
+        heartbeat: dict[str, object],
+        worker: dict[str, object],
+        disconnect: dict[str, object] | None,
+    ) -> dict[str, object] | None:
+        """Close a retained interruption after the replacement worker produces real samples."""
+        if disconnect is not None:
+            physical_end = disconnect.get("ended_at")
+            if (
+                isinstance(physical_end, (int, float))
+                and not isinstance(physical_end, bool)
+                and math.isfinite(physical_end)
+                and physical_end >= pending["started_at"]
+            ):
+                pending["watchdog_disconnect"] = disconnect
+        count = heartbeat.get("packet_count")
+        ended_at = heartbeat.get("last_data_at_epoch")
+        if (
+            health is not StreamStatus.HEALTHY
+            or worker.get("status") != "alive"
+            or heartbeat.get("status") != "fresh"
+            or not isinstance(count, int)
+            or isinstance(count, bool)
+            or count <= 0
+            or not isinstance(ended_at, (int, float))
+            or isinstance(ended_at, bool)
+            or not math.isfinite(ended_at)
+        ):
+            return None
+        # Cached heartbeat ages cannot date a sample against a later reader event.
+        if ended_at <= pending["expired_at"]:
+            return None
+        physical = pending.get("watchdog_disconnect") or {}
+        started_at = pending["started_at"]
+        physical_start = physical.get("started_at")
+        if (
+            isinstance(physical_start, (int, float))
+            and not isinstance(physical_start, bool)
+            and math.isfinite(physical_start)
+            and physical_start <= ended_at
+            and physical_start <= physical["ended_at"]
+        ):
+            started_at = min(started_at, physical_start)
+        else:
+            physical = {}
+        self._source_failure_by_device.pop(device_id, None)
+        self._source_status_by_device.pop(device_id, None)
+        return {
+            **physical,
+            "episode_id": physical.get("episode_id") or pending["episode_id"],
+            "started_at": started_at,
+            "ended_at": ended_at,
+            "elapsed_sec": ended_at - started_at,
+            "recording_continued": False,
+            "detection_source": "source_reader",
+            "reason": "source read interruption",
+            "read_failure_count": pending.get("read_failure_count", 0),
+        }
 
     def _drain_source_errors(self) -> None:
         """Apply pending source-read events into ``_source_status_by_device``."""
@@ -1401,7 +1814,7 @@ class MoreliaRuntime:
             status = _normalize_source_status(event)
             source_port = status.get("source_port")
             device_id = (
-                self._device_id_by_port.get(source_port.lower())
+                self._device_for_source_port(source_port)
                 if isinstance(source_port, str)
                 else None
             )
@@ -1411,6 +1824,8 @@ class MoreliaRuntime:
                     device_id = source_id
             if device_id is None:
                 continue
+            if status.get("state") == "recovered" and isinstance(source_port, str):
+                self._track_device_port(device_id, source_port)
             timestamp_ns = status.get("timestamp_ns")
             if (
                 not isinstance(timestamp_ns, int)
@@ -1424,17 +1839,24 @@ class MoreliaRuntime:
             if failures is None:
                 failures = {}
                 self._source_failure_by_device = failures
-            if state == "degraded" and device_id not in failures:
+            if state in ("degraded", "recovery_window_expired") and device_id not in failures:
                 failures[device_id] = {
                     "episode_id": uuid.uuid4().hex,
                     "started_at": timestamp_ns / 1_000_000_000,
                     "exception_type": status.get("exception_type"),
                 }
-            elif state == "recovery_window_expired":
-                failures.pop(device_id, None)
+            if state == "recovery_window_expired":
+                # The replacement reader cannot report recovery for the old worker.
+                failures[device_id].update(
+                    restart_required=True,
+                    expired_at=timestamp_ns / 1_000_000_000,
+                    read_failure_count=status.get("consecutive_failures", 0),
+                )
             # ``recovered``/``healthy`` clears the degraded latch; do not keep error fields.
             if state in ("recovered", "healthy"):
                 previous = self._source_status_by_device.pop(device_id, None)
+                if state == "healthy" and failures.get(device_id, {}).get("restart_required"):
+                    continue
                 failure = failures.pop(device_id, None)
                 episode_id = failure.get("episode_id") if failure else None
                 started_at = failure.get("started_at") if failure else None
@@ -1459,7 +1881,7 @@ class MoreliaRuntime:
                             "started_at": float(started_at),
                             "ended_at": float(ended_at),
                             "elapsed_sec": float(ended_at - started_at),
-                            "recording_continued": True,
+                            "recording_continued": not failure.get("restart_required", False),
                             "detection_source": "source_reader",
                             "reason": "source read interruption",
                             "max_heartbeat_age_sec": getattr(
@@ -1564,18 +1986,23 @@ class MoreliaRuntime:
             raise
 
     def _close_sinks(self) -> None:
+        errors = []
         for sink in self._sinks:
             close = getattr(sink, "close", None)
             if callable(close):
                 try:
                     close()
                 except Exception as exc:
+                    errors.append(f"{type(sink).__name__}: {type(exc).__name__}: {exc}")
                     _log.warning(
                         "closing output sink failed — data may be unflushed",
                         dataflow_id=self._manifest.dataflow_id,
                         error=type(exc).__name__,
                         message=str(exc),
                     )
+        if errors:
+            self._cleanup_failed("; ".join(errors))
+            raise RuntimeError("Parent output sink cleanup is incomplete")
 
 
 def _bounded_text(value: object, limit: int) -> str | None:

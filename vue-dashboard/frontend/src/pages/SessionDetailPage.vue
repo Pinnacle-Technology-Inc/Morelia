@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,13 +15,15 @@ import CollapsibleSection from "../components/CollapsibleSection.vue";
 import CommandErrorDialog from "../components/CommandErrorDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
+import RecoveryProgress from "../components/RecoveryProgress.vue";
 import SessionNotesList from "../components/SessionNotesList.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import SessionDiagnosticLog from "../components/SessionDiagnosticLog.vue";
 import SessionTimeline from "../components/SessionTimeline.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { normalizeSession, recoverSession, stopSession } from "../session-api";
+import { recoverSession, stopSession } from "../session-api";
+import { sessionTiming, sessionStopExplanation } from "../session-timing";
 import { loadSessionActivity } from "../session-activity-api";
 import { loadSessionDetail } from "../session-detail-api";
 import {
@@ -32,13 +34,14 @@ import {
 import { createSessionNote, loadSessionNotes, updateSessionNote } from "../session-notes-api";
 import { buildActivityTimeline, buildSessionTimeline, formatGapWindow as displayGapWindow } from "../session-timeline";
 import { formatCentralTimestamp } from "../datetime";
+import { deriveRecoveryPresentation } from "../recovery-presentation";
 import {
   deriveFlowStatus,
   deriveRatState,
   deriveStreamRows,
   isOutboxUnproven,
 } from "../session-flow-status";
-import { isRunningLifecycle } from "../session-utils";
+import { isRunningLifecycle, normalizeSession } from "../session-utils";
 import { canRunTemplate, loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator
@@ -56,6 +59,7 @@ const emit = defineEmits(["back", "start-another-run", "state-changed"]);
 const activeTab = ref("overview");
 const dialog = ref(null);
 const detail = ref(null);
+const timingNow = ref(Date.now());
 const detailState = ref("loading");
 const detailError = ref("");
 const commandError = ref("");
@@ -91,6 +95,7 @@ const startingHoldUntil = initialLifecycle === "Starting"
   : 0;
 let eventStream;
 let pollTimer = null;
+let timingTimer = null;
 let startingHoldTimer = null;
 let activityRefreshTimer = null;
 let detailRefreshTimer = null;
@@ -141,6 +146,8 @@ const view = computed(() => {
 });
 
 const lifecycle = computed(() => pendingLifecycle.value ?? view.value.lifecycle);
+const timing = computed(() => sessionTiming({ ...view.value, lifecycle: lifecycle.value }, timingNow.value));
+const stopExplanation = computed(() => sessionStopExplanation(view.value, detail.value?.operations));
 const showSessionHealth = computed(() => !["Starting", "Stopping"].includes(lifecycle.value));
 
 // Session provenance is immutable history. The registry resource below is a
@@ -259,6 +266,9 @@ const sessionDeviceFlows = computed(() => {
   const configuredFlows = detail.value?.session?.device_flows ?? [];
   return reportDevices.map((device, index) => {
     const configured = configuredFlows[index] ?? {};
+    const diagnostic = detail.value?.latest_report?.diagnostics?.streams?.find(
+      (entry) => entry.device_id === device.device_id,
+    ) ?? {};
     const hardwareId = typeof configured.hardware_id === "string" && configured.hardware_id.trim()
       ? configured.hardware_id.trim()
       : null;
@@ -289,6 +299,10 @@ const sessionDeviceFlows = computed(() => {
       recoveryStage: device.recovery_stage,
       recoveryAttempt: device.recovery_attempt,
       recoveryAttemptMax: device.recovery_attempt_max,
+      recoveryPresentation: deriveRecoveryPresentation(device, diagnostic, {
+        lifecycle: lifecycle.value,
+        telemetryCurrent: detail.value?.outbox_health === "current" && detailState.value !== "unavailable",
+      }),
       disconnectElapsedSeconds: device.disconnect_elapsed_seconds,
       disconnectRemainingSeconds: device.disconnect_remaining_seconds,
       disconnectWindowSeconds: device.disconnect_window_seconds,
@@ -321,7 +335,7 @@ const recovery = computed(() => detail.value?.recovery ?? null);
 const recoveryPolicy = computed(() => view.value.policy ? formatStatus(view.value.policy) : "Unavailable");
 const recoveryPolicyMode = computed(() => String(view.value.policy ?? "").toLowerCase());
 const recoveryDevices = computed(() =>
-  sessionDeviceFlows.value.filter((device) => device.recoveryState !== "idle"),
+  sessionDeviceFlows.value.filter((device) => device.recoveryPresentation.visible),
 );
 // Already fetched on every poll and, until now, dropped on the floor.
 const detailOperations = computed(() => detail.value?.operations ?? []);
@@ -460,6 +474,46 @@ const ratCaption = computed(() => {
   return captions[ratState.value] ?? "Session status unavailable";
 });
 
+watch(
+  () => {
+    const inputs = flowInputs.value;
+    const display = deriveFlowStatus(inputs);
+    return JSON.stringify({
+      sessionId: props.sessionId,
+      lifecycle: inputs.lifecycle,
+      backendLifecycle: view.value.lifecycle,
+      pendingLifecycle: pendingLifecycle.value,
+      health: inputs.health,
+      backendHealth: detail.value?.health ?? null,
+      phase: inputs.phase,
+      activityState: inputs.activityState,
+      detailState: detailState.value,
+      detailAvailable: inputs.detailAvailable,
+      outboxHealth: inputs.outboxHealth,
+      streams: inputs.streams.map(({ id, status, tone, flowing }) => ({ id, status, tone, flowing })),
+      display: {
+        tone: display.tone,
+        color: { idle: "gray", good: "green", warn: "yellow", bad: "red" }[display.tone],
+        caption: ratCaption.value,
+        headline: display.headline,
+        reasons: display.toneReasons,
+        unproven: display.unproven,
+      },
+    });
+  },
+  (snapshot) => {
+    const report = detail.value?.latest_report;
+    console.info("[session-display]", {
+      timestamp: new Date().toISOString(),
+      ...JSON.parse(snapshot),
+      reportId: report?.event_id ?? null,
+      reportSequence: report?.sequence ?? null,
+      reportReceivedAt: report?.received_at ?? null,
+    });
+  },
+  { immediate: true, flush: "post" },
+);
+
 const collection = computed(() => {
   if (isRunningLifecycle(lifecycle.value)) return "Running";
   if (lifecycle.value === "Completed") return "Closed";
@@ -472,19 +526,6 @@ function formatStatus(value) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-}
-
-const DEFINITELY_DISCONNECTED_ACTIONS = new Set([
-  "unplug_detected",
-  "waiting_for_port",
-]);
-
-function recoveryHardwarePresence(device) {
-  if (device.hardwarePresent === true) return "Connected";
-  if (device.hardwarePresent === false || DEFINITELY_DISCONNECTED_ACTIONS.has(device.action)) {
-    return "Disconnected";
-  }
-  return "Presence not checked";
 }
 
 function formatRecoverySeconds(value) {
@@ -762,6 +803,7 @@ async function saveNote() {
 }
 
 onMounted(() => {
+  timingTimer = setInterval(() => { timingNow.value = Date.now(); }, 1000);
   if (startingHoldUntil > Date.now()) {
     startingHoldTimer = setTimeout(() => {
       pendingLifecycle.value = null;
@@ -785,6 +827,7 @@ onMounted(() => {
   }, DETAIL_POLL_MS);
 });
 onUnmounted(() => {
+  if (timingTimer) clearInterval(timingTimer);
   eventStream?.stop();
   if (pollTimer) clearInterval(pollTimer);
   if (startingHoldTimer !== null) clearTimeout(startingHoldTimer);
@@ -973,18 +1016,11 @@ const tabTones = computed(() => ({
           <StatusBadge v-if="showSessionHealth" :value="view.health" />
         </div>
         <p v-if="view.experiment"><FlaskConical :size="16" /> {{ view.experiment }}</p>
-        <!-- `view.duration` used to be rendered here as `?? "Not started"`.
-             normalizeSession() never sets a `duration` key and no endpoint
-             supplies one, so the fallback was unconditional: every session, in
-             every lifecycle, displayed "Not started" — including running ones.
-             Elapsed run time needs a real `started_at` on the session payload
-             (today it only exists on RuntimeOwnership), so the slot is dropped
-             rather than kept as a placeholder that lies. Report age lives in the
-             flow bar, on a clock that actually ticks. -->
         <div class="detail-metadata">
           <span>{{ view.streamCount ?? view.deviceCount }} streams / {{ view.sinkCount }} sinks</span>
           <StatusBadge compact label="Monitor" :value="view.watchdog" />
         </div>
+        <p v-if="stopExplanation">{{ stopExplanation }}</p>
       </div>
       <div class="detail-actions">
         <BaseButton
@@ -996,7 +1032,7 @@ const tabTones = computed(() => ({
           <Play :size="16" /> Run source template
         </BaseButton>
         <BaseButton
-          v-if="isRunningLifecycle(lifecycle) && lifecycle !== 'Stopping'"
+          v-if="isRunningLifecycle(lifecycle) || lifecycle === 'Scheduled'"
           variant="danger"
           :disabled="commandBusy"
           :title="forceStopRequired ? 'The previous Stop could not prove a clean shutdown' : 'Stop this session cleanly'"
@@ -1024,6 +1060,12 @@ const tabTones = computed(() => ({
             <dl class="detail-list session-summary__details">
               <div><dt>Ownership</dt><dd>{{ view.isOwner ? "Owner session" : "Monitoring only" }}</dd></div>
               <div><dt>Experiment</dt><dd>{{ view.experiment ?? "Ungrouped" }}</dd></div>
+              <div><dt>Recorded span</dt><dd>{{ timing.recordedLabel }}</dd></div>
+              <div><dt>Duration limit</dt><dd>{{ timing.limitLabel }}</dd></div>
+              <div v-if="view.startedAt"><dt>Session started</dt><dd>{{ formatTimestamp(view.startedAt) }}</dd></div>
+              <div v-if="timing.firstSampleAt !== null"><dt>First recorded sample</dt><dd>{{ formatTimestamp(timing.firstSampleAt) }}</dd></div>
+              <div v-if="timing.lastSampleAt !== null"><dt>Last confirmed sample</dt><dd>{{ formatTimestamp(timing.lastSampleAt) }}</dd></div>
+              <div v-if="timing.timed"><dt>Time remaining</dt><dd>{{ timing.remainingLabel }}</dd></div>
               <div v-if="view.scheduledTime"><dt>Scheduled start</dt><dd>{{ formatTimestamp(view.scheduledTime) }}</dd></div>
               <div v-if="view.fallbackPolicy"><dt>Device policy</dt><dd>{{ formatStatus(view.fallbackPolicy) }}</dd></div>
               <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
@@ -1207,7 +1249,7 @@ const tabTones = computed(() => ({
             <div>
               <h3>{{ recoveryPolicyMode === "recommend" ? "Operator Activity" : "Live Status" }}</h3>
               <p v-if="recoveryPolicyMode === 'recommend'">Review recovery requests and approve a stream restart when action is required.</p>
-              <p v-else>Live source and watchdog telemetry updates recovery progress here. Manual retry appears only after automation gives up.</p>
+              <p v-else>Each stream shows its latest recovery step, verification evidence, and reported history.</p>
             </div>
           </header>
           <div class="recovery-card__body recovery-card__body--activity">
@@ -1219,34 +1261,28 @@ const tabTones = computed(() => ({
               <article v-for="device in recoveryDevices" :key="device.id" class="recovery-device">
                 <header>
                   <div><h4>{{ device.device }}</h4><code v-if="device.hardwareId">{{ device.hardwareId }}</code></div>
-                  <StatusBadge :value="formatStatus(device.recoveryState)" />
                 </header>
+                <RecoveryProgress :status="device.recoveryPresentation" />
                 <dl class="recovery-device__facts">
                   <div><dt>Reason</dt><dd>{{ device.reason ? formatStatus(device.reason) : "Not reported" }}</dd></div>
-                  <div><dt>Hardware</dt><dd>{{ recoveryHardwarePresence(device) }}</dd></div>
-                  <div><dt>Stage</dt><dd>{{ formatStatus(device.recoveryStage ?? device.action) }}</dd></div>
-                  <div><dt>Attempt</dt><dd>{{ device.recoveryAttempt == null ? "—" : `${device.recoveryAttempt} of ${device.recoveryAttemptMax ?? "?"}` }}</dd></div>
                   <div v-if="recoveryPolicyMode === 'recommend' && device.disconnectWindowSeconds != null">
-                    <dt>Observation window</dt>
+                    <dt>{{ device.recoveryPresentation.current ? "Observation window" : "Last reported observation window" }}</dt>
                     <dd>{{ recoveryObservationWindow(device) }}</dd>
                   </div>
                   <div><dt>Last report</dt><dd>{{ device.lastData }}</dd></div>
                 </dl>
-                <div v-if="device.requiresApproval" class="form-notice" role="status">
+                <div v-if="device.requiresApproval && device.recoveryPresentation.current" class="form-notice" role="status">
                   Approval required before restarting this stream.
                 </div>
-                <div v-if="device.recoveryState === 'exhausted'" class="form-notice" role="status">
-                  Automatic recovery exhausted its retry budget. Operator intervention is required.
-                </div>
-                <div v-if="device.recoveryState === 'waiting_for_hardware'" class="form-notice" role="status">
+                <div v-if="device.recoveryState === 'waiting_for_hardware' && device.recoveryPresentation.current" class="form-notice" role="status">
                   Connect the device before a restart can be approved.
                 </div>
-                <div v-if="activeRecoveryDeviceIds.has(device.device)" class="form-notice" role="status">
+                <div v-if="activeRecoveryDeviceIds.has(device.device) && device.recoveryPresentation.current" class="form-notice" role="status">
                   Restart dispatched. Waiting for fresh Healthy telemetry to verify recovery.
                 </div>
                 <div v-if="['awaiting_approval', 'exhausted'].includes(device.recoveryState)" class="card-actions">
                   <BaseButton
-                    :disabled="commandBusy || activeRecoveryDeviceIds.has(device.device) || !device.allowedRecoveryActions.includes('restart')"
+                    :disabled="commandBusy || !device.recoveryPresentation.current || activeRecoveryDeviceIds.has(device.device) || !device.allowedRecoveryActions.includes('restart')"
                     :title="device.controlAvailable ? 'Restart this stream' : 'Fresh watchdog control is unavailable'"
                     @click="openRecoveryDialog(device)"
                   >
@@ -1453,7 +1489,7 @@ const tabTones = computed(() => ({
       </div>
     </BaseCard>
 
-    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and marks the run Completed. This run cannot be restarted; another run must come from its source template." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
+    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" :description="lifecycle === 'Scheduled' ? 'Cancel this scheduled run so it will not start.' : 'Request shutdown now. The run stays Stopping until shutdown is confirmed. Another run must come from its source template.'" confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
       <div class="dialog-notice"><strong>Streams affected</strong><code v-for="flow in sessionDeviceFlows" :key="flow.id">{{ flow.device }}</code></div>
     </GuardedDialog>
     <GuardedDialog

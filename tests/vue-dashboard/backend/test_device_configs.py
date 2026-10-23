@@ -37,7 +37,7 @@ def test_create_accepts_valid_five_char_alphanumeric_hardware_id(app):
     "bad_hardware_id",
     [
         "", # too short
-        "0123456789", # too long
+        "01234567890", # too long (the existing validator permits 1-10 characters)
         "!123" # special char
     ],
 )

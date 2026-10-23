@@ -2,14 +2,12 @@ import time
 import gc
 import multiprocessing as mp
 import sys
-import uuid
 import serial
 import serial.tools.list_ports
 from contextlib import contextmanager
 from threading import Lock, RLock
 from Morelia.Stream.data_flow import DataFlow
 from Morelia.Stream.source import get_data_wrapper
-from Morelia.shutdown import coordinate_shutdown
 from Morelia.Watchdog.healthSink import HealthSink
 from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
 
@@ -37,10 +35,16 @@ class DataFlowMonitor:
         flowgraph:DataFlow = None,
         reconstruction_hook=None,
         sample_rates=None,
+        port_resolver=None,
+        port_presence_checker=None,
     ):
         self.flowgraph = None
         self.snapshot_config = None
         self._reconstruction_hook = reconstruction_hook
+        # Optional application-owned address lookup. Device constructors and
+        # get_dict() remain unchanged; standalone callers retain port lookup.
+        self._port_resolver = port_resolver
+        self._port_presence_checker = port_presence_checker
         self._sample_rates = tuple(sample_rates or ())
         self.dataflow_status = "detached" # Overall DataFlow status.
         # Expected values:
@@ -537,6 +541,36 @@ class DataFlowMonitor:
                 return "worker"
             return "none"
 
+    def _strict_native_address_unlocked(self, stream_index):
+        """Validate the frozen native identity before presence/open/reset.
+
+        The application's resolver additionally checks the frozen backend and
+        physical identity. Standalone native sources use exact serial matching.
+        Native serial addresses cannot be renumbered like COM ports.
+        """
+        expected = self._get_stream_port_unlocked(stream_index)
+        if not expected.strip():
+            raise ValueError("Native recovery requires a nonempty exact serial identity")
+        if self._port_resolver is not None:
+            resolved = self._port_resolver(stream_index)
+            if resolved != expected:
+                raise ValueError("Native recovery cannot change the exact serial identity")
+            return resolved
+        from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+        matches = [item for item in list_d2xx_devices()
+                   if (item.get("serial").decode("utf-8")
+                       if isinstance(item.get("serial"), bytes)
+                       else item.get("serial")) == expected]
+        if len(matches) > 1:
+            raise ValueError("Duplicate native serial identity during recovery")
+        return expected if matches else None
+
+    def _uses_strict_native_unlocked(self, stream_index):
+        source, _ = self.flowgraph._network[stream_index]
+        snapshot = self.snapshot_config[stream_index]["source"]["source_dict"]
+        return bool(getattr(source, "_d2xx_serial_only", False)
+                    or snapshot.get("d2xx_serial_only", False))
+
     def is_stream_port_present(self, stream_index):
         """
         Return True if the stream's serial port appears in the OS port list.
@@ -547,23 +581,37 @@ class DataFlowMonitor:
         self._require_flowgraph()
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
-            expected_port = self._get_stream_port_unlocked(stream_index).lower()
+            expected_port = self._get_stream_port_unlocked(stream_index)
+
+            if self._port_presence_checker is not None:
+                # Address selection is not evidence that the device is present.
+                result = self._port_presence_checker(stream_index)
+                if not isinstance(result, bool):
+                    raise RuntimeError("Device presence observation is unavailable")
+                return result
 
             source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
+            if self._uses_strict_native_unlocked(stream_index):
+                return bool(self._strict_native_address_unlocked(stream_index))
             if source_dict.get("use_d2xx"):
                 from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
 
                 for device in list_d2xx_devices():
                     identifiers = {
-                        str(device.get(key, "")).lower()
+                        (value.decode("utf-8") if isinstance(value, bytes) else str(value)).lower()
                         for key in ("index", "serial", "description")
+                        for value in (device.get(key, ""),)
                     }
-                    if expected_port in identifiers:
+                    if expected_port.lower() in identifiers:
                         return True
                 return False
 
+            if self._port_resolver is not None:
+                # The application verifies physical identity, not the old name.
+                return bool(self._port_resolver(stream_index))
+
             for port_info in serial.tools.list_ports.comports():
-                if str(port_info.device).lower() == expected_port:
+                if str(port_info.device).lower() == expected_port.lower():
                     return True
 
             return False
@@ -589,17 +637,49 @@ class DataFlowMonitor:
             port_name = self._get_stream_port_unlocked(stream_index)
             source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
 
+            workers = getattr(self.flowgraph, "_workers", [])
+            worker = workers[stream_index] if stream_index < len(workers) else None
+            # A retained slot means shutdown has not yet confirmed ownership
+            # release, even when that particular worker has already exited.
+            if worker is not None:
+                return False
+
             for attempt in range(attempts):
                 try:
-                    if source_dict.get("use_d2xx"):
+                    source, _ = self.flowgraph._network[stream_index]
+                    managed_probe = getattr(source, "open_port_for_reset", None)
+                    if callable(managed_probe):
+                        if self._port_resolver is not None:
+                            port_name = self._port_resolver(stream_index)
+                            if port_name != source.port:
+                                # Reconstruct with the resolved address before
+                                # opening; never probe an old COM number.
+                                probe_source = type(source)(**{**source.get_dict(), "port": port_name})
+                            else:
+                                probe_source = source
+                        else:
+                            probe_source = source
+                        try:
+                            probe_source.open_port_for_reset()
+                        finally:
+                            probe_source.close_port()
+                    elif source_dict.get("use_d2xx") or self._uses_strict_native_unlocked(stream_index):
                         from Morelia.Devices.SerialPorts.D2XXComm import D2XXPortIO
 
+                        connection_kwargs = {}
+                        if self._uses_strict_native_unlocked(stream_index):
+                            port_name = self._strict_native_address_unlocked(stream_index)
+                            if port_name is None:
+                                return False
                         ser = D2XXPortIO(
                             port=port_name,
                             baudrate=int(source_dict.get("baudrate", 9600)),
+                            **connection_kwargs,
                         )
                         ser.close_serial_port()
                     else:
+                        if self._port_resolver is not None:
+                            port_name = self._port_resolver(stream_index)
                         ser = serial.Serial(
                             port=port_name,
                             timeout=timeout_sec,
@@ -678,7 +758,7 @@ class DataFlowMonitor:
     #################
     # STREAM ACTION #
     #################
-    def stop_stream(self, stream_index, join_timeout_sec=5.0):
+    def stop_stream(self, stream_index, join_timeout_sec=15.0):
         """
         Stop one stream worker without tearing down its source or queue server.
         """
@@ -712,50 +792,52 @@ class DataFlowMonitor:
         if stop_event is not None:
             stop_event.set()
 
-        lifecycle_state = self._lifecycle_states.get(stream_index, {}).get("state")
+        result = self._stop_worker(
+            worker, stop_event, stream_index, join_timeout_sec, deadline=deadline,
+        )
+
+        # Keep unresolved process objects for a later bounded Stop attempt.
+        # Closing/forgetting them would destroy the only exact ownership proof.
+        released = result.get("teardown_confirmed") is True or result.get("ok") is True
+        if "teardown_confirmed" not in result and result.get("worker_exitcode") is not None:
+            released = worker is not None and not worker.is_alive()
+        if released:
+            try:
+                worker.close()
+            except Exception:
+                pass
+            if stream_index < len(workers):
+                workers[stream_index] = None
+
+        return result
+
+    def _stop_worker(self, worker, stop_event, stream_index, join_timeout_sec, *, deadline=None):
+        """Stop policy hook, called with the stream lock held and stop event set."""
         if worker is None:
+            lifecycle_state = self._lifecycle_states.get(stream_index, {}).get("state")
             already_stopped = lifecycle_state in {"stopped", "detached"}
             return {
                 "ok": already_stopped,
                 "stream_index": stream_index,
                 "worker_status": "missing" if already_stopped else "failed",
-                "terminal_phase": "complete" if already_stopped else "failed",
-                "missing_phases": [] if already_stopped else ["worker_exited"],
-                "transcript": (),
-                "shutdown_transcript": (),
             }
-
-        shutdown_queues = getattr(self.flowgraph, "_shutdown_status_queues", [])
-        shutdown_ids = getattr(self.flowgraph, "_shutdown_ids", [])
-        status_queue = shutdown_queues[stream_index] if stream_index < len(shutdown_queues) else None
-        shutdown_id = shutdown_ids[stream_index] if stream_index < len(shutdown_ids) else str(uuid.uuid4())
-        result = coordinate_shutdown(
-            worker,
-            stop_event,
-            status_queue,
-            shutdown_id,
-            stream_index,
-            join_timeout_sec,
-            deadline=deadline,
-        )
-
-        if status_queue is not None:
-            close = getattr(status_queue, "close", None)
-            if callable(close):
-                close()
-            join_thread = getattr(status_queue, "join_thread", None)
-            if callable(join_thread):
-                join_thread()
-
-        try:
-            worker.close()
-        except Exception:
-            pass
-
-        if stream_index < len(workers):
-            workers[stream_index] = None
-
-        return result
+        timeout = max(0.0, float(join_timeout_sec))
+        if deadline is not None:
+            timeout = max(0.0, deadline - time.monotonic())
+        worker.join(timeout=timeout)
+        forced_termination = worker.is_alive()
+        if forced_termination:
+            worker.terminate()
+            worker.join(timeout=1.0)
+        exitcode = getattr(worker, "exitcode", None)
+        ok = not forced_termination and exitcode == 0
+        return {
+            "ok": ok,
+            "stream_index": stream_index,
+            "worker_status": "stopped" if ok else "failed",
+            "forced_termination": forced_termination,
+            "worker_exitcode": exitcode,
+        }
 
     def start_stream(self, stream_index, duration_sec= float("inf")):
         self._require_flowgraph()
@@ -775,6 +857,9 @@ class DataFlowMonitor:
         return result
 
     def _start_stream_unlocked(self, stream_index, duration_sec=float("inf")):
+        guard = getattr(self.flowgraph, "_acquisition_guard", None)
+        if guard is not None:
+            guard()
         # Validate the current worker slot before creating a replacement.
 
         workers = self.flowgraph._workers
@@ -783,19 +868,6 @@ class DataFlowMonitor:
         stop_events = self.flowgraph._manual_stop_events
         while len(stop_events) <= stream_index:
             stop_events.append(None)
-        shutdown_queues = getattr(self.flowgraph, "_shutdown_status_queues", None)
-        if shutdown_queues is None:
-            shutdown_queues = []
-            self.flowgraph._shutdown_status_queues = shutdown_queues
-        while len(shutdown_queues) <= stream_index:
-            shutdown_queues.append(None)
-        shutdown_ids = getattr(self.flowgraph, "_shutdown_ids", None)
-        if shutdown_ids is None:
-            shutdown_ids = []
-            self.flowgraph._shutdown_ids = shutdown_ids
-        while len(shutdown_ids) <= stream_index:
-            shutdown_ids.append(None)
-
         current_worker = workers[stream_index]
         if current_worker is not None and current_worker.is_alive():
             stream_status = self._get_stream_status_unlocked(stream_index)
@@ -805,33 +877,27 @@ class DataFlowMonitor:
                 "status": "already_running",
                 **stream_status,
             }
+        if current_worker is not None:
+            raise RuntimeError("Cannot replace worker before teardown is confirmed")
 
         source, sinks = self._rebuild_dataflow(stream_index)
         manual_stop_event = mp.Event()
-        status_queue = mp.Queue()
-        shutdown_id = str(uuid.uuid4())
 
         # Match DataFlow behavior:
         if hasattr(source, "_port"):
             source.close_port()
             gc.collect()
 
-        worker = self._make_worker(
+        worker = self._start_worker(
             duration_sec=duration_sec,
             manual_stop_event=manual_stop_event,
             source=source,
             sinks=sinks,
-            status_queue=status_queue,
-            shutdown_id=shutdown_id,
             stream_index=stream_index,
         )
 
-        worker.start()
-
         self.flowgraph._network[stream_index] = (source, sinks)
         stop_events[stream_index] = manual_stop_event
-        shutdown_queues[stream_index] = status_queue
-        shutdown_ids[stream_index] = shutdown_id
         workers[stream_index] = worker
 
         self._poll_locks[stream_index] = Lock()
@@ -845,6 +911,25 @@ class DataFlowMonitor:
             "sink_classes": [type(sink).__name__ for sink in sinks],
         }
 
+    def _start_worker(self, duration_sec, manual_stop_event, source, sinks, stream_index):
+        """Start policy hook; publish worker-specific state only after start succeeds."""
+        worker = self._make_worker(
+            duration_sec=duration_sec,
+            manual_stop_event=manual_stop_event,
+            source=source,
+            sinks=sinks,
+            stream_index=stream_index,
+        )
+        worker.start()
+        return worker
+
+    def _clear_worker_state(self):
+        """Clear lifecycle state after every stream has been stopped, under all locks."""
+        if any(worker is not None for worker in self.flowgraph._workers):
+            return
+        self.flowgraph._manual_stop_events = []
+        self.flowgraph._workers = []
+
     def reset_stream_device(self, stream_index):
         """Clean-slate the stream's device before re-streaming. Resolves the
         source, then defers the device work to the hardware layer.
@@ -855,13 +940,30 @@ class DataFlowMonitor:
         self._require_flowgraph()
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
+            guard = getattr(self.flowgraph, "_acquisition_guard", None)
+            if guard is not None:
+                guard()
             source, _ = self.flowgraph._network[stream_index]
+            workers = getattr(self.flowgraph, "_workers", [])
+            if stream_index < len(workers) and workers[stream_index] is not None:
+                raise RuntimeError("Cannot reset before worker teardown is confirmed")
+            if self._uses_strict_native_unlocked(stream_index):
+                if self._strict_native_address_unlocked(stream_index) is None:
+                    raise FileNotFoundError("Exact native device is absent during reset")
+            if self._port_resolver is not None and not getattr(source, "_use_d2xx", False):
+                current_port = self._port_resolver(stream_index)
+                if current_port != self._get_stream_port_unlocked(stream_index):
+                    # The old address may belong to another device. The rebuilt
+                    # source will be reset at its newly resolved address instead.
+                    source.close_port()
+                    return {"ok": True, "stream_index": stream_index,
+                            "skipped": "port_changed", "port": current_port}
             result = self._hw.reset_streaming_device(source)
             if isinstance(result, dict):
                 result["stream_index"] = stream_index
             return result
 
-    def restart_one_stream(self, stream_index, join_timeout_sec=5.0):
+    def restart_one_stream(self, stream_index, join_timeout_sec=15.0):
         """
         Restart only one failed source/sinks stream.
         """
@@ -886,6 +988,8 @@ class DataFlowMonitor:
                     join_timeout_sec=join_timeout_sec,
                 )
                 reset_result = self.reset_stream_device(stream_index)
+                if not reset_result.get("ok"):
+                    raise RuntimeError(f"Device reset failed: {reset_result.get('error', 'unknown error')}")
                 heartbeat_reset = self._clear_stream_heartbeat_unlocked(stream_index)
                 result = self._start_stream_unlocked(stream_index)
                 if isinstance(result, dict):
@@ -925,11 +1029,13 @@ class DataFlowMonitor:
                 for stream_index in range(len(self.snapshot_config)):
                     self._stop_stream_unlocked(
                         stream_index,
-                        join_timeout_sec=5.0,
+                        join_timeout_sec=15.0,
                     )
 
                 for stream_index in range(len(self.snapshot_config)):
-                    self.reset_stream_device(stream_index)
+                    reset = self.reset_stream_device(stream_index)
+                    if not reset.get("ok"):
+                        raise RuntimeError(f"Device reset failed: {reset.get('error', 'unknown error')}")
 
                 mapping = []
                 for stream_index in range(len(self.snapshot_config)):
@@ -945,7 +1051,11 @@ class DataFlowMonitor:
                     flowgraph_kwargs["source_recovery_window_sec"] = getattr(
                         self.flowgraph, "_source_recovery_window_sec", None
                     )
-                new_flowgraph = flowgraph_type(mapping, **flowgraph_kwargs)
+                rebuild_with_network = getattr(self.flowgraph, "rebuild_with_network", None)
+                new_flowgraph = (
+                    rebuild_with_network(mapping) if callable(rebuild_with_network)
+                    else flowgraph_type(mapping, **flowgraph_kwargs)
+                )
                 new_flowgraph.collect()
 
                 self.flowgraph = new_flowgraph
@@ -975,15 +1085,21 @@ class DataFlowMonitor:
                     "dataflow_status": self.dataflow_status,
                 }
 
-    def close(self):
-        """Shut the status Manager. Safe to call repeatedly; never raises."""
+    def close(self, *, strict=False):
+        """Shut the status Manager, retaining it if shutdown is unconfirmed."""
         if self._status_manager is not None:
             try:
                 self._status_manager.shutdown()
+                process = getattr(self._status_manager, "_process", None)
+                if process is not None and (process.is_alive() or process.exitcode is None):
+                    raise RuntimeError("Status Manager exit is unconfirmed")
             except Exception:
-                pass
+                if strict:
+                    raise
+                return False
             self._status_manager = None
             self._shared_status = None
+        return True
 
     def stop_dataflow(self, join_timeout_sec=15.0):
         """
@@ -1003,17 +1119,18 @@ class DataFlowMonitor:
                         event.set()
                 stream_results = []
                 for stream_index in range(len(self.snapshot_config)):
-                    stream_results.append(self._stop_stream_unlocked(
-                        stream_index,
-                        join_timeout_sec=join_timeout_sec,
-                        deadline=deadline,
-                    ))
-                self.flowgraph._manual_stop_events = []
-                self.flowgraph._workers = []
-                if hasattr(self.flowgraph, "_shutdown_status_queues"):
-                    self.flowgraph._shutdown_status_queues = []
-                if hasattr(self.flowgraph, "_shutdown_ids"):
-                    self.flowgraph._shutdown_ids = []
+                    try:
+                        result = self._stop_stream_unlocked(
+                            stream_index,
+                            join_timeout_sec=join_timeout_sec,
+                            deadline=deadline,
+                        )
+                    except Exception as exc:
+                        result = {"ok": False, "teardown_confirmed": False,
+                                  "stream_index": stream_index,
+                                  "error": f"{type(exc).__name__}: {exc}"}
+                    stream_results.append(result)
+                self._clear_worker_state()
                 ok = all(result.get("ok") is True for result in stream_results)
                 self.last_error = None if ok else "one_or_more_stream_shutdowns_failed"
                 self.dataflow_status = "stopped" if ok else "stop_failed"
@@ -1045,6 +1162,9 @@ class DataFlowMonitor:
             return self._start_dataflow_unlocked()
 
     def _start_dataflow_unlocked(self):
+        guard = getattr(self.flowgraph, "_acquisition_guard", None)
+        if guard is not None:
+            guard()
 
         workers = getattr(self.flowgraph, "_workers", [])
         if any(worker is not None and worker.is_alive() for worker in workers):
@@ -1065,13 +1185,10 @@ class DataFlowMonitor:
                 "stream_statuses": stream_statuses,
             }
 
-        for worker in workers:
-            if worker is None:
-                continue
-            try:
-                worker.close()
-            except Exception:
-                pass
+        if any(worker is not None for worker in workers):
+            return {"ok": False, "status": "cleanup_required",
+                    "error": "Worker teardown must be confirmed before starting",
+                    "dataflow_status": self.dataflow_status}
 
         self.flowgraph._workers = []
         self.flowgraph._manual_stop_events = []
@@ -1477,7 +1594,7 @@ class DataFlowMonitor:
 
         return source, self._ensure_health_sink_for_rebuild(stream_index, source, sinks)
 
-    def _make_worker(self, duration_sec, manual_stop_event, source, sinks, status_queue=None, shutdown_id=None, stream_index=0):
+    def _make_worker(self, duration_sec, manual_stop_event, source, sinks, stream_index=0):
         """Build only one source/sinks pair to manually only reconnect the one that is failing"""
         make_worker = getattr(self.flowgraph, "make_worker", None)
         if callable(make_worker):
@@ -1486,9 +1603,6 @@ class DataFlowMonitor:
                 manual_stop_event,
                 source,
                 sinks,
-                status_queue=status_queue,
-                shutdown_id=shutdown_id,
-                stream_index=stream_index,
             )
         source_class = type(source)
         source_dict = source.get_dict()

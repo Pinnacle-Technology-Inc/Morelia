@@ -31,6 +31,11 @@ HARDWARE_HEALTH = {
 }
 
 _RECONNECT_FAILURE_REASONS = {
+    "recovery_stopping_stream",
+    "recovery_checking_presence",
+    "recovery_checking_port",
+    "recovery_restarting_stream",
+    "recovery_waiting_for_ping",
     "port_check_failed",
     "waiting_for_port",
     "waiting_for_port_release",
@@ -69,6 +74,7 @@ def build_compact_stream_report(verbose_stream):
             verbose_stream.get("rule"), verbose_stream.get("summary")
         ),
         "recovery_event": verbose_stream.get("recovery_event"),
+        "recovery_progress": verbose_stream.get("recovery_progress"),
     }
 
 
@@ -266,6 +272,11 @@ def build_recovery_event(report, action_result):
     elif action in {"needs_action", "manual_stop"}:
         status = "needs_action"
     elif action in {
+        "recovery_stopping_stream",
+        "recovery_checking_presence",
+        "recovery_checking_port",
+        "recovery_restarting_stream",
+        "recovery_waiting_for_ping",
         "stopped_stream_waiting_for_reconnect",
         "unplug_detected",
         "filling_missing_samples",

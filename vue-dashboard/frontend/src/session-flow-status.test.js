@@ -9,6 +9,18 @@ import {
   worstTone,
 } from "./session-flow-status";
 
+it.each(["cleanup_failed", "port_release_timeout"])("shows terminal recovery error %s above an old worker fault", (reason) => {
+  const [row] = deriveStreamRows({ devices: [{
+    device_id: "pod", stream_status: "unhealthy", action: "needs_action", reason,
+    pending_recovery: false, worker_fault: { reason: "protocol_violation" },
+  }] });
+  expect(row.reason).toContain("Automatic recovery stopped.");
+  expect(row.reason).toContain(reason === "cleanup_failed" ? "Stop the session" : "15 seconds");
+  expect(row.tone).toBe(FlowTone.BAD);
+  expect(row.flowing).toBe(false);
+  expect(row.pendingRecovery).toBe(false);
+});
+
 describe("worstTone", () => {
   it("keeps the more severe of two tones regardless of argument order", () => {
     expect(worstTone(FlowTone.GOOD, FlowTone.BAD)).toBe(FlowTone.BAD);
@@ -164,7 +176,7 @@ describe("deriveFlowStatus — running lifecycles", () => {
     });
     // No rail: `Stream health` covers it, and the waiting copy stays reachable
     // for a session that genuinely has not reported.
-    expect(deriveFlowStatus({ lifecycle: "Ending", activityState: "live" }).reason).toMatch(
+    expect(deriveFlowStatus({ lifecycle: "Starting", activityState: "live" }).reason).toMatch(
       /Waiting for the first/,
     );
     expect(status.reason).toContain("Healthy");

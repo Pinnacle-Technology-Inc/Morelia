@@ -39,7 +39,7 @@ from app.watchdog_process.control import WatchdogControlServer
 from app.watchdog_process.hardware_lease import HardwareLeaseSet
 from app.watchdog_process.outbox import WatchdogOutbox, default_outbox_path
 from app.watchdog_process.process import WatchdogIdentity, WatchdogProcess
-from app.watchdog_process.process_tree import install_process_tree_guard
+from app.watchdog_process.process_tree import install_owned_process_tree
 from app.watchdog_process.telemetry_client import TelemetryClient
 
 if TYPE_CHECKING:
@@ -77,6 +77,7 @@ def _build_driver(
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Watchdog Process")
     parser.add_argument("--manifest", required=True, help="Path to manifest JSON file")
+    parser.add_argument("--recording-state", default=None, help="Authenticated established recording evidence")
     parser.add_argument("--runtime-id", required=True, help="Owning runtime host's runtime_id")
     parser.add_argument(
         "--watchdog-id", required=True, help="This watchdog-process instance's identity"
@@ -160,7 +161,7 @@ def build_process(args: argparse.Namespace) -> WatchdogProcess:
     sink_delivery_outbox_factory = functools.partial(
         open_sink_delivery_outbox, str(sink_delivery_outbox_path)
     )
-    return WatchdogProcess(
+    process = WatchdogProcess(
         manifest=manifest,
         identity=identity,
         outbox=outbox,
@@ -172,13 +173,16 @@ def build_process(args: argparse.Namespace) -> WatchdogProcess:
         ),
         stale_grace_attempts=config.WATCHDOG_STALE_GRACE_ATTEMPTS,
     )
+    if args.recording_state is not None:
+        process.restore_timing(json.loads(args.recording_state))
+    return process
 
 
 def main(
     argv: list[str] | None = None,
     *,
     process_factory: Callable[[argparse.Namespace], WatchdogProcess] = build_process,
-    process_tree_guard_factory: Callable[[], object | None] = install_process_tree_guard,
+    process_tree_guard_factory: Callable[[], object | None] | None = None,
     poll_interval_seconds: float | None = None,
 ) -> int:
     args = build_arg_parser().parse_args(argv)
@@ -188,10 +192,17 @@ def main(
         else poll_interval_seconds
     )
 
-    # Install containment before Morelia constructs any stream workers or
-    # queue servers. This reference keeps the Job Object handle open until the
-    # watchdog process itself exits.
-    _process_tree_guard = process_tree_guard_factory()
+    # Persist containment before any worker can start, even if startup never reports READY.
+    if process_tree_guard_factory is None:
+        with open(args.manifest, encoding="utf-8") as stream:
+            manifest = Manifest.from_dict(json.load(stream))
+        outbox_path = args.outbox_path or default_outbox_path(
+            args.outbox_dir or get_config().WATCHDOG_OUTBOX_DIR, args.watchdog_id)
+        _process_tree_guard = install_owned_process_tree(
+            outbox_path, watchdog_id=args.watchdog_id,
+            dataflow_id=manifest.dataflow_id, manifest_hash=manifest.hash)
+    else:
+        _process_tree_guard = process_tree_guard_factory()
     process = process_factory(args)
     configure_logging(
         get_config(),
@@ -214,12 +225,25 @@ def main(
     ready_announced = False
 
     def _shutdown(signum, frame):  # noqa: ARG001
+        process.request_stop("application_shutdown")
         stop_event.set()
 
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
     try:
+        if args.control_token:
+            control_server = WatchdogControlServer(
+                process=process,
+                token=args.control_token,
+                hardware_lease_keys=hardware_leases.keys,
+                request_stop=stop_event.set,
+            )
+            control_server.start()
+
+        if control_server is not None:
+            print(f"CONTROL:{control_server.port}", flush=True)
+
         # Selection-aware dependency preflight FIRST — before any hardware
         # ownership changes (gap SINK-13). This is the worker-boundary guard:
         # if a selected sink's optional/native dependency is missing, fail here
@@ -231,6 +255,9 @@ def main(
 
         preflight_sink_dependencies(process.manifest)
         hardware_leases.acquire()
+        if process.stopping:
+            process.shutdown()
+            return 0
         process.driver.preflight()
         _log.info(
             "watchdog_preflight_confirmed",
@@ -244,22 +271,13 @@ def main(
             outcome="succeeded",
         )
 
-        if args.control_token:
-            control_server = WatchdogControlServer(
-                process=process,
-                token=args.control_token,
-                hardware_lease_keys=hardware_leases.keys,
-                request_stop=stop_event.set,
-            )
-            control_server.start()
-
         # Flush immediately — the parent reads this line to learn we are up.
         ready = f"READY:{control_server.port}" if control_server is not None else "READY"
         print(ready, flush=True)
         ready_announced = True
 
         while not stop_event.wait(timeout=poll_interval_seconds):
-            if process.stopped:
+            if process.stopped or process.stopping:
                 break
 
         # Always call shutdown, even if a fatal ingest response already
@@ -273,6 +291,8 @@ def main(
             outcome="succeeded",
         )
     except Exception as exc:
+        process.request_stop("runtime_failure")
+        process.shutdown()
         if not ready_announced:
             payload = {
                 "error_type": str(getattr(exc, "error_type", type(exc).__name__))[:120],

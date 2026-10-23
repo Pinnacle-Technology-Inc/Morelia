@@ -57,6 +57,8 @@ from app.watchdog_process.sink_delivery_outbox import (
     sink_delivery_key,
 )
 
+from app.output.recording_bounds import acknowledge_recording, bind_recording, buffer_sample_time
+
 _log = structlog.get_logger(__name__)
 
 # Defaults mirror Morelia's QuestSink constructor.
@@ -349,12 +351,19 @@ class ManagedQuestSink:
                 self._outbox.close()
         self._opened = False
 
+        acknowledge_recording(self)
+
     # -- writes ------------------------------------------------------------
+
+    def bind_recording_callback(self, callback) -> None:
+        bind_recording(self, callback)
 
     def write_row(self, row: Mapping[str, Any]) -> None:
         """Deliver one ``{channel: value}`` row (plus optional ``time``/``timestamp``)."""
         if not self._opened:
             self.open()
+        if getattr(self, "_recording_callback", None) is not None and not any(key in row for key in ("timestamp", "time")):
+            raise ValueError("Recording acknowledgement requires an acquisition sample timestamp")
         timestamp = _extract_timestamp(row)
         fields = {
             k: v
@@ -435,6 +444,9 @@ class ManagedQuestSink:
             except Exception as exc:  # noqa: BLE001
                 self._mark_degraded(exc)
                 break
+            for row in json.loads(record.payload):
+                buffer_sample_time(self, int(row["timestamp"]))
+            acknowledge_recording(self, coalesce=True)
             acked.append(record.idempotency_key)
         if acked:
             self._outbox.ack_many(acked)

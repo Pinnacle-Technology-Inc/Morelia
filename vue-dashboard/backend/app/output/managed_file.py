@@ -1,11 +1,16 @@
-"""Managed output file: create-once, reopen-append lifecycle backed by a DB row."""
+"""Manage output files and the database records that describe them.
+
+- Wraps a file handle and its database record.
+- Writes bytes supplied by CSV, EDF, and PVFS sinks.
+- Does not read devices or format samples.
+"""
 
 from __future__ import annotations
 
 import os
 import uuid
 from pathlib import Path
-from typing import IO
+from typing import IO, Callable
 
 from sqlalchemy.exc import IntegrityError
 
@@ -23,35 +28,88 @@ class OutputPathNotWritableError(Exception):
 
 
 class ComponentAllocationError(Exception):
-    """A continuation component could not be allocated for a logical output."""
+    """A new file could not be assigned to continue an existing recording."""
 
 
 class ManagedOutputFile:
-    """Wraps a physical file handle alongside its OutputFile metadata row.
+    """Wrap a file and track its progress.
 
-    Callers write through this object so byte_offset stays current in the DB after
-    every write and flush, allowing 4.3 to record a gap boundary at any time.
+    - byte_offset: file position in bytes.
+    - row_offset: data-row count supplied by the sink.
+    - CSV calls write_buffered(), then checkpoint() to save both.
+    - write() and flush() update only byte_offset.
     """
 
-    def __init__(self, record: OutputFile, handle: IO[bytes]) -> None:
+    def __init__(
+        self,
+        record: OutputFile,
+        handle: IO[bytes],
+        *,
+        _owns_file_placeholder: bool = False,
+    ) -> None:
         self._record = record
         self._handle = handle
+        self._owns_file_placeholder = _owns_file_placeholder
+        # Used for recovery: tracks whether this recording attempt owns the empty file placeholder.
+        # If not, the caller must leave that file alone and choose a new one.
+
+    def release_file_placeholder(self) -> None:
+        """Release this attempt's empty placeholder for native PVFS writer to open
+
+        The caller must already have confirmed that any previous writer stopped.
+        """
+        if not self._owns_file_placeholder or self._handle.closed:
+            raise ComponentAllocationError("no live fresh reservation owned by this attempt")
+        claimed = os.fstat(self._handle.fileno())
+        try:
+            current = os.stat(self._record.path)
+        except OSError as exc:
+            raise ComponentAllocationError("reserved output path is no longer accessible") from exc
+        if not os.path.samestat(claimed, current):
+            raise ComponentAllocationError(
+                "reserved output path no longer refers to the claimed file"
+            )
+        if self._handle.tell() != 0 or claimed.st_size != 0 or current.st_size != 0:
+            raise ComponentAllocationError("reserved output file is not empty")
+        self._handle.close()
+        self._owns_file_placeholder = False
 
     @property
     def record(self) -> OutputFile:
         return self._record
 
     def write(self, data: bytes) -> int:
+        """Write bytes and save the file position, without flushing the file buffer."""
         n = self._handle.write(data)
         with transaction():
             self._record.byte_offset = self._handle.tell()
         return n
 
     def advance_row_offset(self, rows: int) -> None:
+        """Add to the stored row count in a separate database transaction."""
         with transaction():
             self._record.row_offset = self._record.row_offset + rows
 
+    def write_buffered(self, data: bytes) -> int:
+        """Write bytes without updating the database; call checkpoint() to save progress."""
+        n = self._handle.write(data)
+        if n != len(data):
+            raise OSError(f"short output write: {n} of {len(data)} bytes")
+        return n
+
+    def checkpoint(self, row_offset: int) -> None:
+        """Flush bytes, then save byte position and row count in one transaction.
+
+        Supports process-crash recovery. No fsync: power loss can still lose data.
+        """
+        self._handle.flush()
+        offset = self._handle.tell()
+        with transaction():
+            self._record.byte_offset = offset
+            self._record.row_offset = row_offset
+
     def flush(self) -> None:
+        """Flush buffered bytes and save the file position; leave the row count alone."""
         self._handle.flush()
         with transaction():
             self._record.byte_offset = self._handle.tell()
@@ -61,24 +119,25 @@ class ManagedOutputFile:
         *,
         termination_reason: str | None = None,
         acquisition_state: str | None = None,
+        row_offset: int | None = None,
     ) -> None:
-        """Close the handle and mark the component ``closed``.
+        """Flush, save final progress and status, then close the file.
 
-        Optionally records why writing ended (``termination_reason`` such as
-        ``clean``/``forced``/``recovery``) and the resulting acquisition
-        lifecycle (``acquisition_state``). A user-stop completion passes
-        ``acquisition_state="complete"``; it closes this component and — by
-        design — never allocates a continuation.
+        Always close the handle, even if flushing or saving fails.
         """
-        self._handle.flush()
-        with transaction():
-            self._record.byte_offset = self._handle.tell()
-            self._record.status = "closed"
-            if termination_reason is not None:
-                self._record.termination_reason = termination_reason
-            if acquisition_state is not None:
-                self._record.acquisition_state = acquisition_state
-        self._handle.close()
+        try:
+            self._handle.flush()
+            with transaction():
+                self._record.byte_offset = self._handle.tell()
+                if row_offset is not None:
+                    self._record.row_offset = row_offset
+                self._record.status = "closed"
+                if termination_reason is not None:
+                    self._record.termination_reason = termination_reason
+                if acquisition_state is not None:
+                    self._record.acquisition_state = acquisition_state
+        finally:
+            self._handle.close()
 
     def __enter__(self) -> ManagedOutputFile:
         return self
@@ -100,27 +159,16 @@ def create(
     logical_sink_id: str | None = None,
     segment_index: int = 0,
     previous_output_id: str | None = None,
+    require_new_file: bool = False,
 ) -> ManagedOutputFile:
-    """Create a new managed output file with exclusive creation.
+    """Create an empty file and its database record.
 
-    The metadata row is committed BEFORE the file handle is opened.
-    Raises OutputFileAlreadyExistsError if the path already exists.
-    Raises OutputPathNotWritableError if the parent directory is not writable.
-
-    "Already exists" is decided by the filesystem alone, not by history: a
-    leftover OutputFile row for this path from an earlier run whose file the
-    operator has since deleted does not block reuse of that exact name — see
-    _reclaim_stale_row.
-
-    Component identity (packet 11)
-    ------------------------------
-    Every physical file is one *component* of a logical output. When
-    ``logical_sink_id`` is omitted this is component 0 of a brand-new logical
-    output and a fresh id is minted here; ``segment_index`` defaults to 0 and
-    ``previous_output_id`` to NULL. Continuations pass an explicit
-    ``logical_sink_id`` (shared with their predecessor), the next
-    ``segment_index``, and the predecessor ``previous_output_id`` — see
-    :func:`allocate_continuation`, which is the race-safe way to derive them.
+    - Save the database record before opening the file.
+    - Refuse to overwrite an existing file.
+    - The sink writes its own header.
+    - Use allocate_continuation() for later files in the same recording.
+    - require_new_file refuses stale database rows and permits one checked
+      placeholder release before native PVFS creation.
     """
     path = Path(path)
     _assert_directory_writable(path)
@@ -128,7 +176,14 @@ def create(
     if path.exists():
         raise OutputFileAlreadyExistsError(f"output path already exists: {path}")
 
-    _reclaim_stale_row(path)
+    if require_new_file:
+        existing = db.session.scalars(
+            db.select(OutputFile).where(OutputFile.path == str(path))
+        ).first()
+        if existing is not None:
+            raise ComponentAllocationError(f"output path already has an allocated record: {path}")
+    else:
+        _reclaim_stale_row(path)
 
     record = OutputFile(
         output_id=output_id or str(uuid.uuid4()),
@@ -150,27 +205,46 @@ def create(
         db.session.add(record)
 
     try:
-        handle = open(path, "xb")  # exclusive binary create — raises FileExistsError on race
+        handle = open(path, "xb")  # Fail if another process created the file first.
     except FileExistsError:
         raise OutputFileAlreadyExistsError(f"output path already exists: {path}")
     except PermissionError as exc:
         raise OutputPathNotWritableError(f"cannot create output file at {path}: {exc}") from exc
 
-    return ManagedOutputFile(record, handle)
+    return ManagedOutputFile(record, handle, _owns_file_placeholder=require_new_file)
 
 
-def reopen(record: OutputFile) -> ManagedOutputFile:
-    """Reopen an existing managed output file in append mode.
+def reopen(
+    record: OutputFile,
+    *,
+    validate: Callable[[IO[bytes]], int] | None = None,
+) -> ManagedOutputFile:
+    """Open the file for appending without erasing existing bytes.
 
-    Existing bytes are preserved; writes land at EOF. Never truncates.
-    Raises OutputPathNotWritableError if the parent directory is not writable.
+    - With validate: require an existing file and check it before saving metadata.
+      The callback returns the total row count.
+    - Without validate: append mode may create a missing file.
     """
     path = Path(record.path)
     _assert_directory_writable(path)
 
-    handle = open(path, "ab")  # binary append — writes always go to EOF
-    with transaction():
-        record.status = "open"
+    # CSV recovery must fail if the original file is missing.
+    if validate is not None:
+        flags = os.O_RDWR | os.O_APPEND | getattr(os, "O_BINARY", 0)
+        handle = os.fdopen(os.open(path, flags), "a+b")  # deliberately no O_CREAT
+    else:
+        handle = open(path, "ab")
+    try:
+        rows = validate(handle) if validate is not None else None
+        handle.seek(0, os.SEEK_END)
+        with transaction():
+            record.status = "open"
+            if rows is not None:
+                record.byte_offset = handle.tell()
+                record.row_offset = rows
+    except BaseException:
+        handle.close()
+        raise
 
     return ManagedOutputFile(record, handle)
 
@@ -181,43 +255,36 @@ def allocate_continuation(
     path: str | Path | None = None,
     termination_reason: str = "recovery",
     schema_hash: str | None = None,
+    require_new_file: bool = False,
+    previous_writer_released: bool = True,
 ) -> ManagedOutputFile:
-    """Allocate the next physical component of an existing logical output.
+    """Allocate the next linked file without rewriting the prior recording.
 
-    Used by error-triggered recovery: the predecessor's writer must already be
-    closed. This mints NO new ``logical_sink_id`` — the continuation shares
-    ``previous.logical_sink_id``, takes ``segment_index = previous.segment_index
-    + 1``, and links back through ``previous_output_id = previous.output_id``.
-    The unique ``(logical_sink_id, segment_index)`` constraint guarantees one
-    component per ordinal even under concurrent allocation.
-
-    Deterministic name: component 0 owns the base requested name; each
-    continuation ``N`` is ``<stem>.recovery-<NNNN><suffix>`` derived from
-    component 0's path (override with ``path`` when a format needs its own
-    scheme). Example: ``recording.edf`` → ``recording.recovery-0001.edf``.
-
-    Idempotent under retry: if the continuation for this predecessor already
-    exists, its existing file is reopened in append mode (never truncated) and
-    the existing row returned — no duplicate ordinal, no overwrite. This also
-    absorbs the loser of a concurrent race, which adopts the winner's component.
-
-    Failure handling: :func:`create` commits the row before opening the file, so
-    a failed allocation never mutates the immutable predecessor; only the freshly
-    minted continuation row/handle is involved.
+    - Confirm writer release, or pass previous_writer_released=False after worker exit.
+    - Keep logical_sink_id; increment segment_index; link to the previous file.
+    - Default name: recording.recovery-0001.edf.
+    - Reuse an already allocated next file on retry unless require_new_file is set.
+    - PVFS fresh reservations reject existing records, including missing files.
+    - The database prevents duplicate segment numbers for one recording.
     """
     logical_sink_id = previous.logical_sink_id
     next_index = previous.segment_index + 1
 
     existing = _component_at(logical_sink_id, next_index)
     if existing is not None:
+        if require_new_file:
+            raise ComponentAllocationError(
+                f"ordinal {next_index} of logical output {logical_sink_id!r} is already allocated"
+            )
         if existing.previous_output_id != previous.output_id:
             raise ComponentAllocationError(
                 f"ordinal {next_index} of logical output {logical_sink_id!r} "
                 f"is already claimed by predecessor "
                 f"{existing.previous_output_id!r}, not {previous.output_id!r}"
             )
-        _mark_superseded(previous, termination_reason=termination_reason)
-        return reopen(existing)  # idempotent retry / concurrent-loser adoption
+        _mark_superseded(previous, termination_reason=termination_reason,
+                         writer_released=previous_writer_released)
+        return reopen(existing)  # Reuse the next file if it was already allocated.
 
     if path is None:
         base = _component_at(logical_sink_id, 0)
@@ -238,36 +305,39 @@ def allocate_continuation(
             logical_sink_id=logical_sink_id,
             segment_index=next_index,
             previous_output_id=previous.output_id,
+            require_new_file=require_new_file,
         )
     except IntegrityError:
-        # A concurrent allocator won this ordinal between our check and insert.
+        # Another process may have created the next record after our initial check.
         db.session.rollback()
         winner = _component_at(logical_sink_id, next_index)
+        if require_new_file and winner is not None:
+            raise ComponentAllocationError(
+                f"ordinal {next_index} of logical output {logical_sink_id!r} is already allocated"
+            ) from None
         if winner is not None and winner.previous_output_id == previous.output_id:
             return reopen(winner)
         raise
 
-    # The predecessor is now the interrupted, superseded component. Recorded only
-    # after the continuation exists, so a failed allocation leaves it immutable.
-    _mark_superseded(previous, termination_reason=termination_reason)
+    # Mark the old file interrupted only after the new file was created successfully.
+    _mark_superseded(previous, termination_reason=termination_reason,
+                     writer_released=previous_writer_released)
 
     return managed
 
 
-def _mark_superseded(previous: OutputFile, *, termination_reason: str) -> None:
-    """Reconcile metadata after a linked successor proves writer replacement.
-
-    A watchdog may have had to terminate the predecessor process before its sink
-    could update the row.  Continuation allocation is only valid after that
-    writer has stopped, so the durable predecessor can now be closed without
-    reopening or mutating its file contents.
-    """
+def _mark_superseded(previous: OutputFile, *, termination_reason: str,
+                     writer_released: bool = True) -> None:
+    """Record an interruption, marking the file closed only after writer release."""
     path = Path(previous.path)
     with transaction():
         if path.exists():
             previous.byte_offset = path.stat().st_size
-        previous.status = "closed"
-        previous.termination_reason = termination_reason
+        if writer_released:
+            previous.status = "closed"
+            previous.termination_reason = termination_reason
+        elif not previous.termination_reason:
+            previous.termination_reason = termination_reason
         previous.acquisition_state = "interrupted"
 
 
@@ -281,10 +351,9 @@ def _component_at(logical_sink_id: str, segment_index: int) -> OutputFile | None
 
 
 def _derive_continuation_path(base_path: Path, segment_index: int) -> Path:
-    """Deterministic continuation name derived from component 0's base path.
+    """Add a numbered recovery suffix to the original recording's filename.
 
-    ``recording.edf`` at ordinal 1 → ``recording.recovery-0001.edf``; the
-    zero-padded ordinal keeps names lexicographically monotonic.
+    For example, segment 1 of recording.edf is recording.recovery-0001.edf.
     """
     return base_path.with_name(
         f"{base_path.stem}.recovery-{segment_index:04d}{base_path.suffix}"
@@ -298,18 +367,9 @@ def _assert_directory_writable(path: Path) -> None:
 
 
 def _reclaim_stale_row(path: Path) -> None:
-    """Delete a leftover OutputFile row for ``path`` whose physical file is gone.
+    """Remove a database record for a path that create() found missing on disk.
 
-    ``path`` is a UNIQUE column (app/models/output_file.py), so without this
-    a create() at a path some earlier run wrote to — and the operator later
-    deleted by hand — would crash with a raw IntegrityError on insert instead
-    of just working.
-
-    Safe by construction: the caller only reaches here after confirming
-    ``not path.exists()``, and open(path, "xb") creates the file on disk the
-    moment a writer legitimately claims it — so any row still on file for
-    this exact path, regardless of its status, cannot belong to a live
-    writer. It's orphaned metadata from a run that's gone.
+    Allows filename reuse. Does not check for concurrent allocation.
     """
     existing = db.session.scalars(
         db.select(OutputFile).where(OutputFile.path == str(path))

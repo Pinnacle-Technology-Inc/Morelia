@@ -395,6 +395,7 @@ def _build_csv(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
         path=file_path,
         dataflow_id=ctx.dataflow_id,
         fieldnames=list(ctx.csv_fieldnames),
+        session_id=ctx.session_id,
         device_id=ctx.device_id,
         sink_id=sink_config.sink_id,
         schema_hash=ctx.schema_hash,

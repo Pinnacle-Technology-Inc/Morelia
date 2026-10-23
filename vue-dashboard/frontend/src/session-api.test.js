@@ -1,6 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
-  completeSession,
   createTemplateRun,
   loadSessionCatalog,
   loadSessionNameSuggestion,
@@ -65,19 +64,42 @@ it("stops through the guarded route without force", async () => {
   expect(fetchMock.mock.calls[0][1].body).toBe('{"force":false}');
 });
 
-it("completes through its distinct terminal route", async () => {
-  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ status: "completed" }) }));
-  vi.stubGlobal("fetch", fetchMock);
-  await completeSession(7);
-  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/7/complete");
-});
-
 const TEMPLATE_RUN_PAYLOAD = {
   source_template_id: "tmpl-14",
   expected_template_hash: "a".repeat(64),
   assignments: [{ flow_index: 0, device_config_id: 17, sink_locations: [] }],
   execution: { mode: "immediate" },
 };
+
+it.each([null, true, false, "60", 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])("rejects invalid duration %s before making a request", async (duration) => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  await expect(createTemplateRun({ ...TEMPLATE_RUN_PAYLOAD,
+    execution: { mode: "immediate", duration_seconds: duration },
+  }, { idempotencyKey: "invalid-duration" })).rejects.toThrow(/duration/i);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("rejects a scheduled duration instead of silently ignoring it", async () => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  await expect(createTemplateRun({ ...TEMPLATE_RUN_PAYLOAD,
+    execution: { mode: "scheduled", start_at: "2030-01-01T00:00:00Z", duration_seconds: 60 },
+  }, { idempotencyKey: "scheduled-duration" })).rejects.toThrow(/scheduled runs cannot/i);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("preserves duration and identity across an identical retry", async () => {
+  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 41 }) }));
+  vi.stubGlobal("fetch", fetchMock);
+  const payload = { ...TEMPLATE_RUN_PAYLOAD, execution: { mode: "immediate", duration_seconds: 1800 } };
+  await createTemplateRun(payload, { idempotencyKey: "timed-retry" });
+  await createTemplateRun(payload, { idempotencyKey: "timed-retry" });
+  expect(fetchMock.mock.calls[0][1].body).toBe(fetchMock.mock.calls[1][1].body);
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+    execution: { duration_seconds: 1800 }, idempotency_key: "timed-retry",
+  });
+});
 
 it("creates and starts through one idempotent command", async () => {
   const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 41, status: "active" }) }));

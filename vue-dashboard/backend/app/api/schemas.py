@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 
 from marshmallow import Schema, ValidationError, fields, validate, validates_schema
 
+from app.domain.duration import validate_duration_seconds
 from app.domain.enums import (
     DeviceClaimState,
     DeviceType,
@@ -150,6 +151,9 @@ class SessionRunTemplateInputSchema(Schema):
 
 
 class SessionRunExecutionSchema(Schema):
+    duration_seconds = fields.Raw(
+        allow_none=False,
+    )
     mode = fields.String(
         required=True,
         validate=validate.OneOf(["immediate", "scheduled"]),
@@ -157,6 +161,11 @@ class SessionRunExecutionSchema(Schema):
     start_at = fields.DateTime(load_default=None)
     @validates_schema
     def check_execution(self, data, **kwargs):
+        if "duration_seconds" in data:
+            try:
+                validate_duration_seconds(data["duration_seconds"])
+            except ValueError as exc:
+                raise ValidationError(str(exc), field_name="duration_seconds") from exc
         mode = data.get("mode")
         start_at = data.get("start_at")
         if mode == "immediate":
@@ -165,6 +174,8 @@ class SessionRunExecutionSchema(Schema):
                     "Must be omitted for an immediate run.", field_name="start_at"
                 )
             return
+        if "duration_seconds" in data:
+            raise ValidationError("Must be omitted for a scheduled run.", field_name="duration_seconds")
         if start_at is None:
             raise ValidationError("Required for a scheduled run.", field_name="start_at")
         aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)
@@ -210,6 +221,14 @@ class SessionSchema(Schema):
     policy = fields.Enum(PolicyMode, by_value=True)
     experiment_id = fields.String(allow_none=True)
     notes = fields.String(allow_none=True)
+    duration_seconds = fields.Integer(dump_only=True, allow_none=True)
+    recording_bounds = fields.List(fields.Dict(), dump_only=True)
+    started_at = fields.Function(lambda row: (
+        row.started_at.replace(tzinfo=UTC).isoformat() if row.started_at and row.started_at.tzinfo is None
+        else row.started_at.isoformat() if row.started_at else None))
+    ended_at = fields.Function(lambda row: (
+        row.ended_at.replace(tzinfo=UTC).isoformat() if row.ended_at and row.ended_at.tzinfo is None
+        else row.ended_at.isoformat() if row.ended_at else None))
     schedule = fields.Nested(ScheduleSchema, allow_none=True)
     device_flows = fields.List(fields.Raw())
     command_id = fields.String(allow_none=True)
@@ -289,12 +308,28 @@ class FleetOverviewSchema(Schema):
     sessions = fields.List(fields.Nested(FleetSessionRowSchema))
 
 
+class RecoveryProgressEntrySchema(Schema):
+    stage = fields.String()
+    at = fields.Float()
+    attempt = fields.Integer(allow_none=True)
+
+
+class RecoveryProgressSchema(Schema):
+    stage = fields.String()
+    started_at = fields.Float(allow_none=True)
+    ping_status = fields.String(allow_none=True)
+    verification = fields.String(allow_none=True)
+    last_error = fields.String(allow_none=True)
+    history = fields.List(fields.Nested(RecoveryProgressEntrySchema))
+
+
 class LatestStreamEventDeviceSchema(Schema):
     device_id = fields.String(allow_none=True)
     stream_status = fields.String(allow_none=True)
     action = fields.String(allow_none=True)
     reason = fields.String(allow_none=True)
     recovery_stage = fields.String(allow_none=True)
+    recovery_progress = fields.Nested(RecoveryProgressSchema, allow_none=True)
     # The watchdog's ACTUAL auto-restart budget for this stream, spent and total
     # (``Watchdog._recovery_attempt``). Distinct from the staleness fields below:
     # this counts restarts tried, those measure how long the stream has been
@@ -508,7 +543,8 @@ class DeviceTemplateDeleteResponseSchema(Schema):
 class CreateDeviceConfigSchema(Schema):
     device_type = fields.Enum(DeviceType, by_value=True, required=True, data_key="type")
     hardware_id = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    port = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    port = fields.String(validate=validate.Length(min=1, max=255))
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     parameters = fields.Dict(keys=fields.String(), values=fields.Raw(), load_default=dict)
     nickname = fields.String(allow_none=True, load_default=None)
 
@@ -516,7 +552,8 @@ class CreateDeviceConfigSchema(Schema):
 class CreateDeviceConfigFromTemplateSchema(Schema):
     template_name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     hardware_id = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    port = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    port = fields.String(validate=validate.Length(min=1, max=255))
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     nickname = fields.String(allow_none=True, load_default=None)
 
 
@@ -543,7 +580,8 @@ class DeviceRegistrationSchema(Schema):
 class EditDeviceConfigSchema(Schema):
     """Edit parameters; optionally push them to the linked template or relink to another (not both)."""
 
-    parameters = fields.Dict(keys=fields.String(), values=fields.Raw(), required=True)
+    parameters = fields.Dict(keys=fields.String(), values=fields.Raw())
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     update_source_template = fields.Boolean(load_default=False)
     source_template = fields.String(load_default=None, validate=validate.Length(min=1))
 
@@ -563,6 +601,7 @@ class DeviceConfigSchema(Schema):
     hardware_id = fields.String()
     port = fields.String()
     parameters = fields.Raw()
+    connection = fields.Dict()
     color = fields.String(validate=validate.Regexp(r"^#[0-9a-fA-F]{6}$"))
     nickname = fields.String(allow_none=True)
     source_template = fields.String(allow_none=True)
@@ -1049,24 +1088,33 @@ class SessionStatusSnapshotSchema(Schema):
 
 
 class DiscoveredDeviceSchema(Schema):
+    endpoints = fields.List(fields.Dict())
+    connection = fields.Dict()
+    selected_transport = fields.String(allow_none=True)
+    connection_error = fields.String(allow_none=True)
     type = fields.Enum(DeviceType, by_value=True)
     port = fields.String()
     hardware_id = fields.String(allow_none=True)
     label = fields.String()
     availability = fields.String(
         validate=validate.OneOf(
-            ["available", "unopenable", "not_found"]
+            ["available", "unavailable", "unopenable", "not_found"]
         )
     )
 
 
 class ScanResultSchema(Schema):
+    warnings = fields.List(fields.Dict())
     scan_id = fields.String()
     scanned_at = fields.DateTime()
     devices = fields.List(fields.Nested(DiscoveredDeviceSchema))
 
 
 class DevicePoolRowSchema(Schema):
+    endpoints = fields.List(fields.Dict())
+    connection = fields.Dict()
+    selected_transport = fields.String(allow_none=True)
+    connection_error = fields.String(allow_none=True)
     id = fields.Integer(allow_none=True)
     type = fields.String()
     port = fields.String()
@@ -1074,7 +1122,7 @@ class DevicePoolRowSchema(Schema):
     color = fields.String(allow_none=True, validate=validate.Regexp(r"^#[0-9a-fA-F]{6}$"))
     availability = fields.String(
         validate=validate.OneOf(
-            ["available", "unopenable", "not_found"]
+            ["available", "unavailable", "unopenable", "not_found", "unverified"]
         )
     )
     status = fields.String(validate=validate.OneOf(["free", "claimed", "unconfigured"]))
@@ -1087,6 +1135,22 @@ class DevicePoolRowSchema(Schema):
 
 
 class DevicePoolSchema(Schema):
+    warnings = fields.List(fields.Dict())
     scan_id = fields.String()
     scanned_at = fields.DateTime()
     devices = fields.List(fields.Nested(DevicePoolRowSchema))
+
+
+class DeviceScanRowSchema(DevicePoolRowSchema):
+    scan_key = fields.String(allow_none=True)
+    probe_state = fields.String()
+
+
+class DeviceScanSchema(DevicePoolSchema):
+    devices = fields.List(fields.Nested(DeviceScanRowSchema))
+    state = fields.String()
+    revision = fields.Integer()
+    completed = fields.Integer()
+    total = fields.Integer()
+    finished_at = fields.DateTime(allow_none=True)
+    error = fields.String(allow_none=True)

@@ -89,6 +89,8 @@ def _load_param_schema(morelia_type: MoreliaType) -> ParamSchema:
         sys.path.insert(0, morelia_src)
 
     module_name, class_name = morelia_type
+    # Finish package initialization before concurrent lookups acquire provider-module locks.
+    import_module("Morelia")
     provider_type = getattr(import_module(module_name), class_name)
     schema = object.__new__(provider_type).param_schema
     missing = [

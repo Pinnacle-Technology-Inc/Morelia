@@ -63,27 +63,24 @@ def record_boundary(
     policy: str | None = None,
     boundary_version: int = BOUNDARY_VERSION,
 ) -> RecoveryGap:
-    """Persist one recovery boundary as a versioned ``RecoveryGap`` row.
+    """Save a recording interruption so missing or incomplete data can be located later.
+    The returned ``RecoveryGap`` database record identifies the affected device
+    and output, with any known times and file positions before and after the gap.
 
-    The boundary links the prior and next components (via ``previous_output_id``
-    / ``next_output_id`` for ``segmented`` kinds, or a single ``output_id`` for
-    ``same_file`` kinds) and carries source/sink/recovery identity
-    (``device_id`` / ``sink_id`` / ``recovery_id``) plus timing (``gap_start`` /
-    ``gap_end``) and count metadata (``boundary_payload``).
+    For recording that resumes in the same file, supply ``output_id``. For
+    recording that resumes in a new file, supply ``previous_output_id`` and
+    ``next_output_id``. Set ``boundary_kind`` to match. File positions go in
+    ``pre_offset`` and ``post_offset`` as ``{"byte": .., "row": ..}`` mappings;
+    the older segment ID fields stay NULL. ``boundary_payload`` holds extra
+    details such as sample counts, and ``boundary_version`` identifies the
+    format of those details.
 
-    ``pre_offset`` / ``post_offset`` are structured ``{"byte": .., "row": ..}``
-    positions stored in dedicated JSON columns — never smuggled through the
-    legacy ``previous_segment_id`` / ``next_segment_id`` strings, which this
-    function leaves NULL.
-
-    When ``partial_final_row`` is True the boundary payload records that the
-    trailing record of the pre-gap component may be truncated (option a: accept
-    and document; prior bytes are never rewritten).
-
-    Idempotent per ``recovery_id``: if a gap already exists for this recovery
-    episode it is returned unchanged rather than duplicated. Confidence defaults
-    to UNCERTAIN when exact sample boundaries are unavailable.
+    Set ``partial_final_row`` if the last row before the gap may be incomplete.
+    This records the condition without changing the file. Confidence defaults
+    to UNCERTAIN. If ``recovery_id`` already has a gap, return that record unchanged.
     """
+    # Recovery reports can arrive more than once for the same interruption.
+    # Reuse the saved gap so the recording history does not show duplicate gaps.
     if recovery_id is not None:
         existing = _repo.find_by_recovery_id(recovery_id)
         if existing is not None:

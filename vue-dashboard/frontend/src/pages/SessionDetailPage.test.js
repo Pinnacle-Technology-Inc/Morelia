@@ -58,8 +58,8 @@ describe("template-centric session closure", () => {
     expect(sessionDetailSource).toContain("Retry Recovery");
   });
 
-  it("describes stopped sessions as closed runs, not restartable sessions", () => {
-    const status = deriveFlowStatus({ lifecycle: "Stopped" });
+  it("describes completed sessions as closed runs, not restartable sessions", () => {
+    const status = deriveFlowStatus({ lifecycle: "Completed" });
 
     expect(status.reason).toContain("source template");
     expect(status.reason).not.toContain("restart");

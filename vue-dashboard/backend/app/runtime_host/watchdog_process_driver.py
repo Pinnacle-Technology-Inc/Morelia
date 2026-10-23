@@ -26,6 +26,7 @@ from app.runtime_child.driver import ReportCallback, RuntimePhase, RuntimeReport
 from app.runtime_host.manifest import Manifest
 from app.runtime_host.process_exit import wait_for_process_exit
 from app.watchdog_process.control import WatchdogControlClient, WatchdogControlError
+from app.watchdog_process.outbox import default_outbox_path
 
 _log = structlog.get_logger(__name__)
 
@@ -53,34 +54,14 @@ def pid_is_alive(pid: int) -> bool:
     ``Popen`` object for a watchdog process it did not spawn itself, only the
     PID a previous runtime_host's ownership row persisted.
     """
-    if pid <= 0:
-        return False
-    if sys.platform == "win32":
-        return _pid_is_alive_windows(pid)
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True  # exists, just owned by someone else
-    else:
-        return True
+    from app.runtime_host.process_evidence import ProcessState, probe_process
+    # Compatibility callers must retain ownership when the OS cannot answer.
+    return probe_process(pid).state is not ProcessState.DEAD
 
 
 def _pid_is_alive_windows(pid: int) -> bool:
-    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
-    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-    STILL_ACTIVE = 259
-    handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
-    if not handle:
-        return False
-    try:
-        exit_code = ctypes.c_ulong()
-        if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
-            return False
-        return exit_code.value == STILL_ACTIVE
-    finally:
-        kernel32.CloseHandle(handle)
+    from app.runtime_host.process_evidence import ProcessState, _probe_windows
+    return _probe_windows(pid).state is not ProcessState.DEAD
 
 
 def _kill_pid(pid: int) -> None:
@@ -124,6 +105,9 @@ class WatchdogProcessDriver:
         pid_alive: PidAliveFn = pid_is_alive,
         control_client_factory: ControlClientFactory = WatchdogControlClient,
         process_exit_waiter: ProcessExitWaiter = wait_for_process_exit,
+        watchdog_id: str | None = None,
+        recording_state: dict | None = None,
+        before_spawn: Callable[..., None] | None = None,
     ) -> None:
         self._manifest = manifest
         self._manifest_path = manifest_path
@@ -139,6 +123,15 @@ class WatchdogProcessDriver:
         self._pid_alive = pid_alive
         self._control_client_factory = control_client_factory
         self._process_exit_waiter = process_exit_waiter
+        self._initial_watchdog_id = watchdog_id
+        self._recording_state = recording_state
+        self._before_spawn = before_spawn
+        self._watchdog_outbox_path: str | None = None
+        self._predecessor_watchdogs: list[dict] = []
+        self._stop_result: dict | None = None
+        self._stop_intent: dict | None = None
+        self._timing_uncertain = False
+        self._replacement_required = recording_state is not None or adopt_watchdog_id is not None
         # reads WATCHDOG_OUTBOX_DIR directly.
         self._respawn_max_attempts = (
             respawn_max_attempts
@@ -221,7 +214,7 @@ class WatchdogProcessDriver:
         )
 
     def stop(self) -> None:
-        self._require(RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING, RuntimePhase.STOPPED)
+        self._require(RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING, RuntimePhase.STOPPING, RuntimePhase.STOPPED)
         if self._phase is RuntimePhase.STOPPED:
             return
         with self._state_lock:
@@ -338,7 +331,49 @@ class WatchdogProcessDriver:
                     if self._watchdog_exit_details is not None
                     else None
                 ),
+                "watchdog_outbox_path": self._watchdog_outbox_path,
+                "predecessor_watchdogs": list(self._predecessor_watchdogs),
+                "recording_state": self._recording_state,
+                "stop_intent": self._stop_intent,
+                "stop_result": self._stop_result,
             }
+
+    def _read_lifecycle_evidence(self) -> None:
+        from app.watchdog_process.outbox import read_lifecycle_reports
+        if not self._watchdog_outbox_path:
+            self._timing_uncertain = True
+            return
+        try:
+            reports = read_lifecycle_reports(self._watchdog_outbox_path)
+            for report in reports:
+                event = report.envelope
+                if (event.watchdog_id != self._watchdog_id
+                        or event.dataflow_id != self._manifest.dataflow_id
+                        or event.manifest_hash != self._manifest.hash):
+                    raise ValueError("outbox producer identity mismatch")
+                if event.event_type in ("runtime.acquisition_started", "runtime.recording_started", "runtime.recording_progress"):
+                    self._recording_state = dict(event.payload)
+                elif event.event_type == "runtime.stop_requested":
+                    self._stop_intent = dict(event.payload)
+                elif event.event_type == "runtime.stop_finished":
+                    self._stop_result = dict(event.payload)
+        except Exception:
+            self._timing_uncertain = True
+            _log.exception("could not recover watchdog lifecycle evidence")
+
+    def _replacement_blocked(self) -> bool:
+        if self._stop_intent or self._stop_result:
+            return True
+        duration = getattr(self._manifest, "duration_seconds", None)
+        if duration is None:
+            return False
+        if self._timing_uncertain or not self._recording_state:
+            return True  # a dead producer may have recorded before persisting its first event
+        from app.watchdog_process.process import remaining_recording_seconds
+        try:
+            return remaining_recording_seconds(self._recording_state, duration) <= 0
+        except (ValueError, KeyError, TypeError, RuntimeError, OSError):
+            return True
 
     # -- crash detection + respawn --------------------------------------------
 
@@ -437,6 +472,21 @@ class WatchdogProcessDriver:
         unchanged and gets a fresh watchdog_id + token
         """
         stale_watchdog_id = self._watchdog_id
+        self._read_lifecycle_evidence()
+        self._predecessor_watchdogs.append({
+            "watchdog_id": stale_watchdog_id, "runtime_id": self._runtime_id,
+            "dataflow_id": self._manifest.dataflow_id, "manifest_hash": self._manifest.hash,
+            "pid": self._watchdog_pid, "outbox_path": self._watchdog_outbox_path,
+            "exit_details": {"exit_code": exit_code},
+        })
+        if self._replacement_blocked():
+            self._supervision_stop.set()
+            self._proc = None
+            self._respawn_exhausted = True
+            self._watchdog_state = WatchdogProcessState.STOPPED if self._stop_result else WatchdogProcessState.UNCERTAIN
+            self._phase = RuntimePhase.STOPPED if self._stop_result and self._stop_result.get("teardown_confirmed") else RuntimePhase.STOPPING
+            self._watchdog_exit_details = {"exit_code": exit_code, "replacement_blocked": True}
+            return
         _log.error(
             "watchdog process crashed",
             runtime_id=self._runtime_id,
@@ -466,7 +516,7 @@ class WatchdogProcessDriver:
         attempt failed before READY. Each failed attempt consumes budget so a
         permanent startup failure cannot create an infinite process loop.
         """
-        if self._respawn_count >= self._respawn_max_attempts:
+        if self._replacement_blocked() or self._respawn_count >= self._respawn_max_attempts:
             self._respawn_exhausted = True
             _log.error(
                 "watchdog respawn budget exhausted",
@@ -553,6 +603,10 @@ class WatchdogProcessDriver:
             )
             return
         self._watchdog_id = watchdog_id
+        self._watchdog_outbox_path = str(default_outbox_path(self._outbox_dir or get_config().WATCHDOG_OUTBOX_DIR, watchdog_id))
+        self._recording_state = evidence.get("recording_state") or self._recording_state
+        self._stop_intent = evidence.get("stop_intent")
+        self._stop_result = evidence.get("stop_result")
         self._watchdog_pid = pid
         self._watchdog_control_token = self._control_token
         self._watchdog_control_port = control_port
@@ -570,13 +624,23 @@ class WatchdogProcessDriver:
     # -- process management ---------------------------------------------------
 
     def _spawn_watchdog_process(self) -> None:
+        if self._replacement_required and self._replacement_blocked():
+            raise RuntimeError("durable timing/stop evidence forbids watchdog replacement")
         if self._ingest_url is None:
             raise RuntimeError(
                 "cannot spawn a watchdog process without an ingest URL "
                 "(INGEST_BASE_URL is unset)"
             )
-        watchdog_id = uuid4().hex
+        watchdog_id = self._initial_watchdog_id or uuid4().hex
+        self._initial_watchdog_id = None
         token = self._control_token or secrets.token_hex(32)
+        outbox_path = str(default_outbox_path(self._outbox_dir or get_config().WATCHDOG_OUTBOX_DIR, watchdog_id))
+        if self._before_spawn is not None:
+            self._before_spawn(watchdog_id, outbox_path)
+        self._watchdog_id = watchdog_id
+        self._watchdog_outbox_path = outbox_path
+        self._watchdog_control_token = token
+        self._watchdog_token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
 
         args = [
             sys.executable, "-m", "app.watchdog_process",
@@ -588,6 +652,8 @@ class WatchdogProcessDriver:
         ]
         if self._ingest_token:
             args += ["--ingest-token", self._ingest_token]
+        if self._recording_state:
+            args += ["--recording-state", json.dumps(self._recording_state)]
         if self._outbox_dir:
             args += ["--outbox-dir", self._outbox_dir]
         if self._hardware_lock_dir:
@@ -613,6 +679,18 @@ class WatchdogProcessDriver:
             **popen_kwargs,
         )
         log_handle.close()  # child holds its own fd; this process doesn't write to it
+        self._proc = proc
+        self._watchdog_pid = proc.pid
+        self._watchdog_state = WatchdogProcessState.STARTING
+        if self._before_spawn is not None:
+            try:
+                self._before_spawn(watchdog_id, outbox_path, pid=proc.pid,
+                    token_hash=self._watchdog_token_hash)
+            except Exception:
+                proc.terminate()
+                with suppress(Exception):
+                    proc.wait(timeout=get_config().WATCHDOG_PROCESS_REAP_TIMEOUT_SECONDS)
+                raise
 
         ready = False
         control_port: int | None = None
@@ -620,6 +698,21 @@ class WatchdogProcessDriver:
         try:
             for line in proc.stdout:
                 value = line.strip()
+                if value.startswith("CONTROL:"):
+                    control_port = int(value.split(":", 1)[1])
+                    client = self._control_client_factory(port=control_port, token=token)
+                    evidence = client.probe()
+                    if (evidence.get("watchdog_id") != watchdog_id
+                            or evidence.get("manifest_hash") != self._manifest.hash
+                            or evidence.get("dataflow_id") != self._manifest.dataflow_id):
+                        raise RuntimeError("watchdog startup control identity mismatch")
+                    self._watchdog_control_port = control_port
+                    self._watchdog_pid = evidence["pid"]
+                    if self._before_spawn is not None:
+                        self._before_spawn(watchdog_id, outbox_path,
+                            pid=self._watchdog_pid, control_port=control_port,
+                            token_hash=self._watchdog_token_hash)
+                    continue
                 if value.startswith("ERROR:"):
                     payload = json.loads(value.split(":", 1)[1])
                     if isinstance(payload, dict):
@@ -727,6 +820,9 @@ class WatchdogProcessDriver:
                     recovery_id=shutdown_id,
                     command_id=correlation.get("command_id"),
                     request_id=correlation.get("request_id"),
+                    stop_reason=str(correlation.get("stop_reason") or (
+                        "user_stop" if correlation.get("command_id") else "application_shutdown"
+                    )),
                 )
             config = get_config()
             deadline = time.monotonic() + config.WATCHDOG_PROCESS_STOP_TIMEOUT_SECONDS
@@ -803,6 +899,7 @@ class WatchdogProcessDriver:
                     self._proc.kill()
             self._proc = None
         if self._watchdog_id is not None:
+            self._read_lifecycle_evidence()
             self._watchdog_state = WatchdogProcessState.STOPPED
 
     # -- reports ---------------------------------------------------------------

@@ -5,9 +5,9 @@ import BaseCard from "./BaseCard.vue";
 import SessionFlowBar from "./SessionFlowBar.vue";
 import StatusBadge from "./StatusBadge.vue";
 import { loadSessionDetail } from "../session-detail-api";
-import { normalizeSession } from "../session-api";
+import { normalizeSession } from "../session-utils";
 import { deriveStreamRows, isOutboxUnproven } from "../session-flow-status";
-import { timestampMs } from "../datetime";
+import { sessionTiming, sessionStopExplanation } from "../session-timing";
 
 const props = defineProps({
   session: { type: Object, required: true },
@@ -89,18 +89,8 @@ const activityState = computed(() => {
   return "live";
 });
 
-const actualDuration = computed(() => {
-  const startTimes = (detail.value?.runtimes ?? [])
-    .map((runtime) => timestampMs(runtime.started_at))
-    .filter((timestamp) => timestamp !== null);
-  if (!startTimes.length) return "—";
-
-  const elapsedSeconds = Math.max(0, Math.floor((now.value - Math.min(...startTimes)) / 1000));
-  const hours = Math.floor(elapsedSeconds / 3600);
-  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-  const seconds = elapsedSeconds % 60;
-  return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
-});
+const timing = computed(() => sessionTiming(displaySession.value, now.value));
+const stopExplanation = computed(() => sessionStopExplanation(displaySession.value, detail.value?.operations));
 
 async function refreshDetail() {
   try {
@@ -178,10 +168,12 @@ onUnmounted(() => {
       </div>
 
       <dl class="session-stats">
-        <div><dt>Duration</dt><dd>{{ actualDuration }}</dd></div>
+        <div><dt>Recorded span</dt><dd>{{ timing.recordedLabel }}</dd></div>
+        <div v-if="timing.timed"><dt>Time remaining</dt><dd>{{ timing.remainingLabel }}</dd></div>
         <div><dt>Streams / Sinks</dt><dd>{{ displaySession.streamCount ?? displaySession.deviceCount }} / {{ displaySession.sinkCount }}</dd></div>
      
       </dl>
+      <p v-if="stopExplanation">{{ stopExplanation }}</p>
 
       <section
         v-show="expanded"

@@ -9,20 +9,17 @@ Discovery now has two phases:
 1. *Enumeration* — list visible serial ports (``port_lister``).
 2. *Identification* — open each candidate port and ask the device what it is via
    the POD ``TYPE`` command (``prober``). Identity comes from the FTDI serial
-   number exposed by pyserial's port descriptor, normalized by
-   ``_normalize_ftdi_serial`` so Windows and Linux agree on one id per pod.
+   number exposed by pyserial's port descriptor, preserved verbatim so discovery
+   and port resolution use the same identity (including Windows channel letters).
 
 Both collaborators are injectable so tests run with zero real hardware.
 """
 
 from __future__ import annotations
 
-import contextlib
 import os
-import re
 import sys
-import threading
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
@@ -55,6 +52,10 @@ class DiscoveredDevice:
     hardware_id: str | None
     label: str
     availability: str
+    endpoints: tuple[dict[str, object], ...] = ()
+    transport: str | None = None
+    scan_key: str | None = None
+    probe_state: str = "complete"
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +72,7 @@ class PodProbe:
     pinged: bool
     type_number: int | None
     hardware_id: str | None
+    error_code: str | None = None
 
 
 def detect_pod_devices(
@@ -157,38 +159,6 @@ def _vid_from_hwid(value: object) -> int | None:
     return _parse_usb_vid(vid)
 
 
-# On Windows the FTDI VCP driver (``ftdibus.sys``) builds each port's device
-# instance id as ``FTDIBUS\VID_0403+PID_6001+<eeprom-serial><channel>\0000``,
-# where ``<channel>`` is the port letter on the chip — ``A`` for the first
-# channel, ``B``/``C``/``D`` for the extra channels of an FT2232/FT4232.
-# pyserial's FTDIBUS branch captures serial and channel together, so a pod whose
-# EEPROM holds ``12345`` is reported as ``12345A``. Linux reads the EEPROM string
-# straight from sysfs (``.../serial``) and reports ``12345``, so the same pod
-# would otherwise register under two different ids depending on the host OS.
-#
-# Any trailing letter is a channel designator and is dropped, not just ``A``:
-# ``12345B`` on a second channel normalizes the same way ``12345A`` does. The one
-# guard that remains is that the remainder must be all digits — pod EEPROM
-# serials are numeric, so the rule cannot chew a real trailing letter off an
-# alphanumeric FTDI serial (e.g. a factory-default ``A50285BI``, which Linux
-# reports verbatim). That also keeps it idempotent: an id ending in a digit never
-# normalizes twice.
-#
-# Consequence on multi-channel parts: both channels of an FT2232 report the same
-# EEPROM serial, so ``12345A`` and ``12345B`` now collapse to ``12345``. Pods are
-# single-channel FTDI, so this does not arise in practice; if a multi-channel
-# device is ever introduced, its channels are distinguishable only by ``port``.
-_FTDI_CHANNEL_SUFFIX = re.compile(r"^(\d+)[A-Za-z]$")
-
-
-def _normalize_ftdi_serial(value: str | None) -> str | None:
-    """Drop the Windows-only FTDI channel letter from a reported serial."""
-    if value is None:
-        return None
-    match = _FTDI_CHANNEL_SUFFIX.fullmatch(value)
-    return match.group(1) if match else value
-
-
 def _classify(
     *,
     port_info: object,
@@ -203,7 +173,7 @@ def _classify(
       3. A port that answers TYPE with a model not in ``TYPE_MAP`` is dropped.
       4. A clean supported POD (``TYPE_MAP`` hit, pinged) is ``available``.
     """
-    hardware_id = _normalize_ftdi_serial(
+    hardware_id = (
         _optional_text(probe.hardware_id)
         or _optional_text(_attribute(port_info, "serial_number", "serial", "hardware_id", "hwid"))
     )
@@ -260,75 +230,15 @@ def _import_devices_module() -> Any:
     return importlib.import_module("Morelia.Devices")
 
 
-# -- control-queue suppression for discovery probes ---------------------------
-#
-# Constructing a Morelia ``Pod`` normally spawns a ``queue_server.py`` subprocess
-# (see ``PacketManager.initialize_control_queue``) plus fixed ``sleep`` waits for
-# it to bind. That IPC only matters on the *streaming* path where the port is
-# handed to a worker (``self._port is None``). A discovery probe opens the port
-# directly and reads ``TYPE`` straight off pyserial, so the subprocess is spawned,
-# sits idle, and is torn down again — 1–3s of pure overhead per port.
-#
-# We neutralize the spawn by replacing ``initialize_control_queue`` with a no-op
-# for the duration of Pod construction. Discovery runs probes 4-wide, so this
-# must be safe when multiple threads enter and leave the patch concurrently.
-
-_control_queue_lock = threading.Lock()
-_control_queue_depth = 0
-_original_init_control_queue: Any = None
-
-
-@contextlib.contextmanager
-def _suppress_control_queue_spawn() -> Iterator[None]:
-    """Neutralize ``PacketManager.initialize_control_queue`` while a probe builds
-    its ``Pod``, so no ``queue_server.py`` subprocess is spawned.
-
-    Thread-safe: the no-op stays installed until the last concurrent probe exits.
-    """
-    global _control_queue_depth, _original_init_control_queue
-
-    with _control_queue_lock:
-        if _control_queue_depth == 0:
-            PacketManager = _import_packet_manager()
-            _original_init_control_queue = PacketManager.initialize_control_queue
-            PacketManager.initialize_control_queue = lambda self: None
-        _control_queue_depth += 1
-
-    try:
-        yield
-
-    finally:
-        with _control_queue_lock:
-            _control_queue_depth -= 1
-            if _control_queue_depth == 0:
-                PacketManager = _import_packet_manager()
-                PacketManager.initialize_control_queue = _original_init_control_queue
-                _original_init_control_queue = None
-
-
-
-def _import_packet_manager() -> type:
-    """Import Morelia's ``PacketManager`` lazily (honors ``MORELIA_SRC``)."""
-    import importlib
-
-    morelia_src = os.environ.get("MORELIA_SRC")
-    if morelia_src and morelia_src not in sys.path:
-        sys.path.insert(0, morelia_src)
-
-    module = importlib.import_module("Morelia.Devices.SerialPorts.queue_manager")
-    return module.PacketManager
-
-
 def _live_prober(port: str, *, baudrate: int = 9600, timeout_sec: float = 2.0) -> PodProbe:
     """Open port as a POD device and read its ``TYPE`` with a bounded timeout.
 
     Always releases the handle — discovery must not retain a port after scanning.
     """
-    devices_module = _import_devices_module()
-    pod_cls = devices_module.Pod
+    pod_cls = _import_probe_class()
     try:
-        with _suppress_control_queue_spawn():
-            pod = pod_cls(port, baudrate=baudrate)
+        pod = pod_cls(port, baudrate=baudrate, probe=True)
+        pod.open_port()
     except Exception:
         return PodProbe(opened=False, pinged=False, type_number=None, hardware_id=None)
 
@@ -352,6 +262,14 @@ def _live_prober(port: str, *, baudrate: int = 9600, timeout_sec: float = 2.0) -
         return PodProbe(opened=True, pinged=False, type_number=None, hardware_id=None)
     finally:
         _cleanup_pod(pod)
+
+
+def _import_probe_class():
+    """Load the backend adapter lazily, preserving the MORELIA_SRC boundary."""
+    _import_devices_module()
+    from app.discovery.managed_pods import Pod
+
+    return Pod
 
 
 def _payload_value(pod: Any, command: str, timeout_sec: float) -> Any:

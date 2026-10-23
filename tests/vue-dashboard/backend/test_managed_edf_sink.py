@@ -220,6 +220,67 @@ def test_close_is_idempotent(tmp_path, app):
         sink.close()  # second close is a no-op
 
 
+@pytest.mark.parametrize("fail_write,fail_close", [(True, False), (False, True), (True, True)])
+def test_shutdown_failure_is_persisted_and_propagated_after_best_effort_close(
+    tmp_path, app, monkeypatch, fail_write, fail_close,
+):
+    """A native failure cannot produce a clean worker receipt or complete output."""
+    from datetime import UTC, datetime
+
+    timestamp = 1_790_164_800_000_000_000
+    with app.app_context():
+        sink = ManagedEdfSink(path=tmp_path / "failure.edf", dataflow_id=_DF,
+                              channels=["EEG1"], sample_rate=2,
+                              device_id="pod:one", sink_id="edf")
+        acknowledgements = []
+        sink.bind_recording_callback(acknowledgements.append)
+        sink.write_frame([1], timestamp=timestamp)
+        sink.write_frame([2], timestamp=timestamp + 500_000_000)
+        proven = list(acknowledgements)
+        sink.write_frame([3], timestamp=timestamp + 1_000_000_000)
+        writer = sink._writer
+        native_close = writer.close
+        closes = []
+
+        def close_then_fail():
+            closes.append(True)
+            native_close()
+            if fail_close:
+                raise OSError("injected native close failure")
+
+        def failed_write(*_args):
+            raise OSError("injected final write failure")
+
+        monkeypatch.setattr(writer, "close", close_then_fail)
+        if fail_write:
+            monkeypatch.setattr(writer, "writeSamples", failed_write)
+
+        with pytest.raises(ManagedEdfSinkError, match="EDF shutdown failed") as error:
+            sink.close()
+        assert closes == [True]
+        assert sink._writer is None
+        assert sink.record.status == "closed"
+        assert sink.record.acquisition_state == "interrupted"
+        assert sink.record.termination_reason == "writer_failure"
+        assert sink.record.sample_loss == (1 if fail_write else 0)
+        if fail_write:
+            assert "final buffer write" in str(error.value)
+            assert acknowledgements == proven
+        else:
+            assert acknowledgements[-1]["last_sample_at"] == datetime.fromtimestamp(
+                timestamp // 1_000_000_000 + 1, UTC,
+            ).isoformat()
+        if fail_close:
+            assert "native writer close" in str(error.value)
+        # Evidence is durable, not merely the live SQLAlchemy object's state.
+        from app.database import db
+        db.session.expire(sink.record)
+        assert sink.record.acquisition_state == "interrupted"
+        assert sink.record.termination_reason == "writer_failure"
+        sink.close()
+        assert closes == [True]
+
+
 # ---------------------------------------------------------------------------
 # SINK-05 safety + reconstruction
 # ---------------------------------------------------------------------------

@@ -17,8 +17,8 @@ class DeviceSeenRepository:
                 port=device.port,
                 availability=device.availability,
                 display_label=device.label,
-                warnings_json=None,
-                raw_json=None,
+                warnings_json=[ep for ep in device.endpoints if ep.get("error_code")] or None,
+                raw_json={"endpoints": list(device.endpoints), "transport": device.transport},
             )
             for device in devices
         ]

@@ -41,6 +41,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from app.database import db, transaction
+from app.domain.enums import SinkType
 from app.models.output_file import OutputFile
 
 # ---------------------------------------------------------------------------
@@ -179,6 +180,76 @@ def _as_ref(row: OutputFile) -> ComponentRef:
         acquisition_state=row.acquisition_state,
         termination_reason=row.termination_reason,
     )
+
+
+def latest_component(
+    output_id: str, *, dataflow_id: str, sink_id: str | None
+) -> OutputFile:
+    """Find the newest PVFS allocation in the descriptor's original recording."""
+    anchor = db.session.scalars(
+        db.select(OutputFile).where(OutputFile.output_id == output_id)
+    ).first()
+    if anchor is None:
+        raise ValueError(f"no output_files row for output_id={output_id!r}")
+    components = list(db.session.scalars(
+        db.select(OutputFile)
+        .where(OutputFile.logical_sink_id == anchor.logical_sink_id)
+        .order_by(OutputFile.segment_index)
+        .execution_options(populate_existing=True)
+    ))
+    for index, component in enumerate(components):
+        if (component.dataflow_id != dataflow_id or component.sink_id != sink_id
+                or component.device_id != anchor.device_id
+                or component.session_id != anchor.session_id
+                or component.sink_type != SinkType.PVFS):
+            raise ValueError("PVFS recovery identity does not match the persisted recording")
+        predecessor = components[index - 1].output_id if index else None
+        if component.segment_index != index or component.previous_output_id != predecessor:
+            raise ValueError("PVFS recovery component chain is incomplete")
+    return components[-1]
+
+
+def _validate_confirmed_samples(confirmed_samples: int) -> None:
+    if type(confirmed_samples) is not int or confirmed_samples < 0:
+        raise ValueError("confirmed_samples must be a nonnegative integer")
+
+
+def record_pvfs_progress(output_id: str, confirmed_samples: int) -> None:
+    """Persist validated native receipts without reducing previously confirmed progress."""
+    _validate_confirmed_samples(confirmed_samples)
+    with transaction():
+        row = db.session.scalars(db.select(OutputFile).where(
+            OutputFile.output_id == output_id, OutputFile.sink_type == SinkType.PVFS
+        )).first()
+        if row is None:
+            raise ValueError(f"no PVFS output_files row for output_id={output_id!r}")
+        db.session.execute(db.update(OutputFile).where(
+            OutputFile.output_id == output_id,
+            OutputFile.row_offset < confirmed_samples,
+        ).values(row_offset=confirmed_samples))
+
+
+def mark_pvfs_recording_gap(
+    output_id: str,
+    confirmed_samples: int,
+    termination_reason: str = "writer_failure",
+) -> None:
+    """Preserve interrupted recording evidence without claiming writer ownership ended."""
+    _validate_confirmed_samples(confirmed_samples)
+    if not termination_reason or len(termination_reason) > 32:
+        raise ValueError("termination_reason must contain 1 to 32 characters")
+    with transaction():
+        row = db.session.scalars(db.select(OutputFile).where(
+            OutputFile.output_id == output_id, OutputFile.sink_type == SinkType.PVFS
+        )).first()
+        if row is None:
+            raise ValueError(f"no PVFS output_files row for output_id={output_id!r}")
+        db.session.execute(db.update(OutputFile).where(
+            OutputFile.output_id == output_id,
+            OutputFile.row_offset < confirmed_samples,
+        ).values(row_offset=confirmed_samples))
+        row.acquisition_state = ACQUISITION_INTERRUPTED
+        row.termination_reason = termination_reason
 
 
 class OutputFilesRepository:
