@@ -49,13 +49,9 @@ if __name__ == "__main__":
         # Handle bytes to string conversion if needed
         if isinstance(device_serial, bytes):
             device_serial = device_serial.decode('utf-8')
-        # Use serial if available, otherwise use index-based identifier for unique port
-        # Empty serials would all hash to the same port, causing conflicts
-        if device_serial and device_serial.strip():
-            port = device_serial  # Use serial number for D2XX
-        else:
-            # Fallback to index-based identifier when serial is empty
-            port = f"D2XX_0"  # Use index 0 for first device
+        if not device_serial or not device_serial.strip():
+            raise RuntimeError("The FTDI device has no serial; identify it before opening it.")
+        port = device_serial
         print(f"\nUsing D2XX device: {device_serial if device_serial else '(no serial, using index)'}")
         use_d2xx = True
     
@@ -63,11 +59,7 @@ if __name__ == "__main__":
     # Option 1: Use serial number
     # pod_1 = Pod8206HR(device_serial, 100, use_d2xx=True)
     
-    # Option 2: Use device index (0, 1, 2, etc.)
-    # pod_1 = Pod8206HR(0, 100, use_d2xx=True)
-    
-    # Option 3: Use COM port name (will try to match to D2XX device by index)
-    # This is less reliable - better to use serial number
+    # Never infer a D2XX index from a COM number. Use the exact FTDI serial.
     # D2XX uses 115200 baud with RTS/CTS handshake (configured in D2XXComm)
     pod_1 = Pod8206HR(port, 100, use_d2xx=use_d2xx, baudrate=115200)
     
