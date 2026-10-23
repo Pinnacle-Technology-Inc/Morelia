@@ -1,8 +1,9 @@
 """Keep PVFS native writes on the acquisition worker while a device reconnects."""
 
+import logging
 import math
 import time
-from contextlib import ExitStack, suppress
+from contextlib import ExitStack
 
 import reactivex as rx
 from Morelia.packet import ControlPacket
@@ -10,6 +11,8 @@ from Morelia.Stream import source as legacy_source
 from reactivex import operators as ops
 
 from app.runtime_child.device_connection import current_connection_address
+
+_log = logging.getLogger(__name__)
 
 
 def _is_managed_pvfs(sink):
@@ -53,6 +56,7 @@ def _stream(
         failure_start = None
         placeholders = failures = 0
         last_status = last_reconnect = float("-inf")
+        last_reconnect_log = float("-inf")
         read = getattr(pod, "read_pod_packet_streaming", None)
 
         def report(state, exc, now):
@@ -106,8 +110,16 @@ def _stream(
                                 break
                             if now - last_reconnect >= 0.5:
                                 last_reconnect = now
-                                with suppress(Exception):
+                                try:
                                     _refresh_source(pod, reconnect_config)
+                                except Exception:
+                                    if now - last_reconnect_log >= source_error_emit_interval_sec:
+                                        _log.warning(
+                                            "Device reconnect failed: source=%s",
+                                            source_id,
+                                            exc_info=True,
+                                        )
+                                        last_reconnect_log = now
                         if failures == 1 or now - last_status >= source_error_emit_interval_sec:
                             report("degraded", exc, now)
                             last_status = now
