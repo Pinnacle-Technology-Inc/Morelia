@@ -32,6 +32,7 @@ from app.control.event_poller import telemetry_freshness
 from app.database import db
 from app.domain.enums import HealthState, IncidentStatus, SessionStatus
 from app.domain.errors import SessionNotFound
+from app.domain.recovery_progress import normalize_recovery_progress
 from app.models.backend_event import BackendEvent
 from app.models.incident import Incident
 from app.models.output_file import OutputFile
@@ -251,6 +252,7 @@ def _latest_report_device(
         # take a stream action. Preserve that stage so the UI can show progress
         # instead of an empty recovery card during the reconnect window.
         "recovery_stage": stage or source_read_state,
+        "recovery_progress": normalize_recovery_progress(recovery.get("progress")),
         "recovery_attempt": attempt.get("current"),
         "recovery_attempt_max": attempt.get("max"),
         "disconnect_elapsed_seconds": disconnect_elapsed_seconds,

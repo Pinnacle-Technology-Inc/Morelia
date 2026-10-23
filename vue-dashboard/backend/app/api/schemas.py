@@ -308,12 +308,28 @@ class FleetOverviewSchema(Schema):
     sessions = fields.List(fields.Nested(FleetSessionRowSchema))
 
 
+class RecoveryProgressEntrySchema(Schema):
+    stage = fields.String()
+    at = fields.Float()
+    attempt = fields.Integer(allow_none=True)
+
+
+class RecoveryProgressSchema(Schema):
+    stage = fields.String()
+    started_at = fields.Float(allow_none=True)
+    ping_status = fields.String(allow_none=True)
+    verification = fields.String(allow_none=True)
+    last_error = fields.String(allow_none=True)
+    history = fields.List(fields.Nested(RecoveryProgressEntrySchema))
+
+
 class LatestStreamEventDeviceSchema(Schema):
     device_id = fields.String(allow_none=True)
     stream_status = fields.String(allow_none=True)
     action = fields.String(allow_none=True)
     reason = fields.String(allow_none=True)
     recovery_stage = fields.String(allow_none=True)
+    recovery_progress = fields.Nested(RecoveryProgressSchema, allow_none=True)
     # The watchdog's ACTUAL auto-restart budget for this stream, spent and total
     # (``Watchdog._recovery_attempt``). Distinct from the staleness fields below:
     # this counts restarts tried, those measure how long the stream has been

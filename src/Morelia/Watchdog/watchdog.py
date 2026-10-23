@@ -10,6 +10,8 @@ from Morelia.Watchdog.reporting import (
     summarize_watchdog_health,
 )
 from Morelia.Stream.data_flow import DataFlow
+import logging
+import math
 import time
 import multiprocessing as mp
 import threading
@@ -17,6 +19,7 @@ import uuid
 
 # Wall-clock epoch captured when this module is first imported (≈ program start)
 _PROGRAM_START = time.time()
+NATIVE_READINESS_TIMEOUT_SEC = 30.0
 
 def _now_rel():
     """
@@ -211,6 +214,17 @@ class Watchdog:
         if self.dataflow_monitor is not None:
             self.dataflow_monitor.refresh_rebuild_snapshot()
         not_ready = [k for k, r in results.items() if not r["ok"]]
+        for port in not_ready:
+            result = results[port]
+            logging.getLogger(__name__).error(
+                "device preflight failed",
+                extra={
+                    "action": "preflight",
+                    "port": port,
+                    "attempt": result.get("attempts_used"),
+                    "reason": result.get("error"),
+                },
+            )
         if require_ready and not_ready:
             raise RuntimeError(f"preflight failed for {not_ready}")
         return {"ok": not not_ready, "devices": results}
@@ -242,6 +256,7 @@ class Watchdog:
                               interval_sec=_resolve_interval(stream_interval, idx, 30), timeout_sec=timeout_sec,
                               recovery_policy=self.recovery_policy,
                               max_auto_restart_attempts=self.max_auto_restart_attempts,
+                              native_transport=bool(self.dataflow_monitor.snapshot_config[idx]["source"]["source_dict"].get("use_d2xx")),
                               publish=self._publish_stream)
                 self._stream_watchers[idx] = w
                 w.start()
@@ -638,9 +653,11 @@ class Watchdog:
         Output: None.
         """
         with self._results_lock:
+            previous = self._stream_results.get(stream_index) or {}
             self._stream_results[stream_index] = report
         action = report.get("action", {}).get("taken") if isinstance(report, dict) else None
-        if action in {"unplug_detected", "connection_restored", "heartbeat_age_exceeded"}:
+        if (report.get("recovery_progress") != previous.get("recovery_progress")
+                or action in {"unplug_detected", "connection_restored", "heartbeat_age_exceeded"}):
             self._urgent_report_event.set()
         if self._on_stream_result is not None:
             try:
@@ -691,7 +708,7 @@ class StreamWatcher (threading.Thread):
     Owns ALL mutable state for its stream (failure count, disconnected flag),
     so a slow reconnect or a crash here cannot touch any other stream.
     """   
-    def __init__(self, stream_index: int, monitor: DataFlowMonitor, *, failure_threshold: int, max_heartbeat_age_sec: float, first_packet_timeout_sec: float = None, interval_sec: float, timeout_sec: float, recovery_policy: str, max_auto_restart_attempts: int = 3, publish):
+    def __init__(self, stream_index: int, monitor: DataFlowMonitor, *, failure_threshold: int, max_heartbeat_age_sec: float, first_packet_timeout_sec: float = None, interval_sec: float, timeout_sec: float, recovery_policy: str, max_auto_restart_attempts: int = 3, native_transport: bool = False, publish):
         """
         Initialize a daemon watcher for one DataFlow stream.
 
@@ -709,6 +726,11 @@ class StreamWatcher (threading.Thread):
         )
         self._interval_sec = interval_sec
         self._timeout_sec = timeout_sec
+        self._native_transport = native_transport
+        if native_transport:
+            self._first_packet_timeout_sec = max(
+                self._first_packet_timeout_sec, NATIVE_READINESS_TIMEOUT_SEC,
+            )
         self._recovery_policy = _normalize_recovery_policy(recovery_policy)
         self._max_auto_restart_attempts = max_auto_restart_attempts
         self._publish = publish                #fire-and-forget to report back what it got
@@ -735,8 +757,9 @@ class StreamWatcher (threading.Thread):
         # dies with something to say.
         self._worker_fault = None
         self._recovery_block = None
+        self._recovery_progress = None
         self._port_release_started_at = None
-        self._port_release_timeout_sec = 15.0
+        self._port_release_timeout_sec = NATIVE_READINESS_TIMEOUT_SEC if native_transport else 15.0
 
     # ------------------------------------------------------------------ #
     # Thread lifecycle                                                   #
@@ -779,6 +802,7 @@ class StreamWatcher (threading.Thread):
         Output: None.
         """
         self._disconnected = False
+        self._recovery_progress = None
         self._recovery_block = None
         self._port_release_started_at = None
         self._failure_count = 0
@@ -792,6 +816,57 @@ class StreamWatcher (threading.Thread):
         self._cold_open_backoff_remaining = 0
         self._first_packet_started_at = time.monotonic()
         self._first_packet_seen = False
+
+    def _set_recovery_progress(self, stage, *, ping_status=None, verification=None,
+                               error=None, clear_error=False):
+        """Retain observed recovery transitions when periodic reports coalesce."""
+        previous = self._recovery_progress
+        if previous is None or (stage == "detected" and previous["stage"] != "detected"):
+            previous = {"stage": None, "started_at": time.time(), "ping_status": None,
+                        "verification": None, "last_error": None, "history": []}
+        history = list(previous["history"])
+        if previous["stage"] != stage:
+            history.append({"stage": stage, "at": time.time(),
+                            "attempt": self._recovery_attempt_count or None})
+        self._recovery_progress = {
+            **previous, "stage": stage, "history": history[-16:],
+            "ping_status": ping_status if ping_status is not None else previous["ping_status"],
+            "verification": verification if verification is not None else previous["verification"],
+            "last_error": (None if clear_error else str(error)[:500] if error
+                           else previous["last_error"]),
+        }
+
+    def _publish_recovery_progress(self, stage, base, **details):
+        """Publish the active operation before a hardware call can block."""
+        self._set_recovery_progress(stage, **details)
+        result = {**base, "ok": False, "action": "recovery_" + stage,
+                  "failure_reason": "recovery_" + stage,
+                  "recovery_policy": self._recovery_policy,
+                  "recovery_attempt": self._recovery_attempt()}
+        self._publish(self.stream_index, self._build_verbose_stream_report(_now_rel(), result))
+
+    def _record_recovery_result(self, result, heartbeat):
+        """Associate completed checks with the evidence already observed."""
+        action = result.get("action")
+        stages = {"unplug_detected": "settling", "filling_missing_samples": "settling",
+                  "waiting_for_port": "waiting_for_device", "waiting_for_port_release": "waiting_for_port",
+                  "waiting_for_heartbeat": "waiting_for_data", "port_check_failed": "presence_check_failed",
+                  "restart_failed": "restart_failed", "reconnect_failed_stop_stream_completed": "retrying"}
+        stage = stages.get(action)
+        if action == "needs_action":
+            stage = {"cleanup_failed": "cleanup_failed", "port_release_timeout": "port_access_timeout"}.get(
+                result.get("initiating_failure_reason"),
+                "awaiting_approval" if self._recovery_policy == "recommend" else "attempts_exhausted",
+            )
+        elif action == "check_failed" and self._recovery_progress is not None:
+            stage = "check_failed"
+        if stage is not None:
+            self._set_recovery_progress(stage, error=extract_action_error(result))
+        elif action == "connection_restored" and heartbeat.get("status") == "fresh":
+            self._set_recovery_progress("streaming", verification="data", clear_error=True)
+        elif (action == "none" and result.get("failure_reason") is None
+              and heartbeat.get("status") == "fresh" and self._recovery_progress is not None):
+            self._set_recovery_progress("streaming", verification="data", clear_error=True)
 
     def _maybe_rearm_from_needs_action(self):
         """
@@ -824,6 +899,7 @@ class StreamWatcher (threading.Thread):
         # A physical disconnect begins a new recovery episode. Return control
         # to the existing port-wait loop with a fresh restart budget.
         self._recovery_attempt_count = 0
+        self._set_recovery_progress("detected")
         self._response_grace = None
         self._disconnected = True
         self._monitor.set_lifecycle_state(
@@ -1077,11 +1153,15 @@ class StreamWatcher (threading.Thread):
                     },
                 }
 
+        if (self._recovery_progress is None
+                or self._recovery_progress["stage"] in {"recovery_verified", "streaming"}):
+            self._set_recovery_progress("detected")
         #If the stream worker is in unknown-state, counting up for 3 times
         self._failure_count += 1
         worker_failed = failure_reason in ("worker_dead", "worker_missing")
         escalates = worker_failed or failure_reason in ("heartbeat_stale", "data_never_started")
         if not escalates or (not worker_failed and self._failure_count < self._failure_threshold):
+            self._set_recovery_progress("settling")
             return {
                 **base,
                 "ok": False,
@@ -1263,6 +1343,7 @@ class StreamWatcher (threading.Thread):
 
         first_observation = self._port_absent_since is None
         if first_observation:
+            self._set_recovery_progress("detected")
             self._port_absent_since = now
             packet_count = heartbeat.get("packet_count")
             self._port_absent_packet_count = (
@@ -1399,6 +1480,9 @@ class StreamWatcher (threading.Thread):
 
     def _stop_for_recovery(self, base):
         """Stop the failed stream and require worker exit before recovery."""
+        if self._recovery_progress is None:
+            self._set_recovery_progress("detected")
+        self._publish_recovery_progress("stopping_stream", base)
         try:
             result = self._monitor.stop_stream(self.stream_index)
         except Exception as error:
@@ -1516,8 +1600,11 @@ class StreamWatcher (threading.Thread):
         )
 
     def _response_grace_check_count(self):
-        """Use ceiling-half of the detection threshold, with one minimum check."""
-        return max(1, (self._failure_threshold + 1) // 2)
+        """Allow native startup enough checks to cover its readiness window."""
+        checks = max(1, (self._failure_threshold + 1) // 2)
+        if self._native_transport:
+            checks = max(checks, math.ceil(self._first_packet_timeout_sec / self._interval_sec))
+        return checks
 
     def _heartbeat_verify_result(self):
         grace = self._response_grace
@@ -1532,6 +1619,13 @@ class StreamWatcher (threading.Thread):
         }
 
     def _finish_recovery_success(self, restart_result, verify_result, heartbeat_verify=None):
+        data_verified = isinstance(heartbeat_verify, dict) and heartbeat_verify.get("ok") is True
+        self._set_recovery_progress(
+            "recovery_verified", ping_status="passed" if verify_result.get("ok") else "failed",
+            verification="data" if data_verified else "ping", clear_error=True,
+        )
+        if data_verified:
+            self._set_recovery_progress("streaming", verification="data", clear_error=True)
         self._port_release_started_at = None
         physical_disconnect = self._physical_disconnect
         disconnect_episode_id = self._disconnect_episode_id
@@ -1578,6 +1672,7 @@ class StreamWatcher (threading.Thread):
             "stream_index": self.stream_index,
             "ok": True,
             "action": "connection_restored",
+            "hardware_present": True,
             "failure_reason": None,
             "failure_count": 0,
             "stream_status": self._safe_get_stream_status(),
@@ -1634,9 +1729,10 @@ class StreamWatcher (threading.Thread):
     def _advance_response_grace(self, base):
         """Check a restarted worker's data path on one normal watcher tick."""
         grace = self._response_grace
+        base = {**base, "hardware_present": grace.get("port", {}).get("present")}
         heartbeat = self._get_heartbeat()
         grace["results"].append(heartbeat)
-        grace["remaining"] -= 1
+        grace["remaining"] = max(0, grace["remaining"] - 1)
         heartbeat_verify = self._heartbeat_verify_result()
 
         if heartbeat["status"] == "fresh":
@@ -1655,7 +1751,9 @@ class StreamWatcher (threading.Thread):
                 base, grace["restart_result"], grace["verify_result"], crashed_status
             )
 
-        if grace["remaining"] > 0:
+        deadline = grace.get("deadline")
+        waiting = time.monotonic() < deadline if deadline is not None else grace["remaining"] > 0
+        if waiting:
             return {
                 **base,
                 "ok": False,
@@ -1812,6 +1910,7 @@ class StreamWatcher (threading.Thread):
             "failure_count": self._failure_count,
             "stream_status": self._safe_get_stream_status(),
             "recovery_policy": self._recovery_policy,
+            "hardware_present": None,
         }
 
         lifecycle_state = m.get_lifecycle_state(self.stream_index)
@@ -1863,6 +1962,9 @@ class StreamWatcher (threading.Thread):
                     and time.monotonic() - self._port_release_started_at >= self._port_release_timeout_sec):
                 return self._wait_for_port_release(base)
 
+            if self._recovery_progress is None:
+                self._set_recovery_progress("detected")
+            self._publish_recovery_progress("checking_presence", base)
             #Check if any port is available
             try:
                 port_present = m.is_stream_port_present(self.stream_index)
@@ -1874,6 +1976,7 @@ class StreamWatcher (threading.Thread):
                     "failure_reason": "port_check_failed",
                     "error": f"{type(error).__name__}: {error}",
                 }
+            base["hardware_present"] = port_present
             #if port is unavailable, wait
             if not port_present:
                 self._port_release_started_at = None
@@ -1887,6 +1990,7 @@ class StreamWatcher (threading.Thread):
                     "action": "waiting_for_port",
                     "failure_reason": "waiting_for_port",
                 }
+            self._publish_recovery_progress("checking_port", base)
             #if port exist but cant be opened, wait until next tick and retry
             if not m.is_stream_port_openable(self.stream_index):
                 return self._wait_for_port_release(base)
@@ -1905,6 +2009,7 @@ class StreamWatcher (threading.Thread):
                     "recovery_attempt": self._recovery_attempt(),
                 }
             self._recovery_attempt_count += 1
+            self._publish_recovery_progress("restarting_stream", base)
             restart_result = m.restart_one_stream(self.stream_index)
             if not restart_result["ok"]: #If restart status is bad
                 # A device can appear before VCP or D2XX can use it. Wait for
@@ -1927,11 +2032,19 @@ class StreamWatcher (threading.Thread):
                     "recovery_attempt": self._recovery_attempt(),
                 }
 
-            #if we successfully restart stream, ping the worker to verify that it's working
+            # Native opening can outlast PING while the worker is still starting.
+            verification_started_at = time.monotonic()
+            self._publish_recovery_progress("waiting_for_ping", base, ping_status="pending")
             verify_result = m.poll_stream_queue_roundtrip(
                 stream_index=self.stream_index,
                 cmd="PING",
                 timeout_sec=self._timeout_sec,
+            )
+            self._set_recovery_progress(
+                "recovery_verified" if verify_result["ok"] else "waiting_for_data",
+                ping_status="passed" if verify_result["ok"] else "failed",
+                verification="ping" if verify_result["ok"] else None,
+                error=verify_result.get("error"), clear_error=bool(verify_result["ok"]),
             )
             if verify_result["ok"]:#If the worker responsed
                 return self._finish_recovery_success(
@@ -1960,6 +2073,10 @@ class StreamWatcher (threading.Thread):
                 "results": [],
                 "port": {"present": port_present, "openable": True},
             }
+            if self._native_transport:
+                self._response_grace["deadline"] = (
+                    verification_started_at + self._first_packet_timeout_sec
+                )
             return {
                 **base,
                 "ok": False,
@@ -2253,6 +2370,7 @@ class StreamWatcher (threading.Thread):
             "fault": self._worker_fault,
         }
         heartbeat = action_result.get("heartbeat") or self._get_heartbeat()
+        self._record_recovery_result(action_result, heartbeat)
         failure_reason = action_result.get("failure_reason")
         initiating_failure_reason = action_result.get("initiating_failure_reason")
         startup = action_result.get("startup")
@@ -2288,6 +2406,8 @@ class StreamWatcher (threading.Thread):
                 "rule": "connection_restored",
                 "summary": "Connection restored; recording real samples again.",
             }
+            if heartbeat.get("status") != "fresh":
+                assessment["summary"] = "Worker responded to PING; waiting for real samples."
 
         if action_result.get("initiating_failure_reason") in {"cleanup_failed", "port_release_timeout"}:
             assessment["summary"] = action_result.get("error") or assessment["summary"]
@@ -2306,6 +2426,7 @@ class StreamWatcher (threading.Thread):
             "initiating_failure_reason": initiating_failure_reason,
             "action": build_action_signal(action_result),
             "signals": signals,
+            "recovery_progress": self._recovery_progress,
         }
         report["recovery_event"] = build_recovery_event(report, action_result)
         return report

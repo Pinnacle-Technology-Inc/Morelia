@@ -40,6 +40,7 @@ from app.runtime_child.sink_factory import RuntimeContext, build_sink, build_sin
 from app.runtime_child.device_connection import constructor_connection_kwargs, apply_or_defer_parameters, current_connection_address, current_connection_present, routing_key
 from app.runtime_child.queue_diagnostics import DiagnosticQueue, label_queue
 from app.services.connections import EndpointInventoryCache
+from app.domain.recovery_progress import normalize_recovery_progress
 from app.runtime_host.manifest import Manifest
 
 _log = structlog.get_logger(__name__)
@@ -341,6 +342,7 @@ class MoreliaRuntime:
         self._startup_event = threading.Event()
         self._startup_failure: WorkerStartupError | None = None
         self._nonhealthy_streak_by_device = {device_id: 0 for device_id in self._device_ids}
+        self._nonhealthy_since_by_device: dict[str, float] = {}
 
         # Latest sink-write failures, kept separate from device/stream health.
         self._sink_error_queue: Any | None = None
@@ -463,8 +465,17 @@ class MoreliaRuntime:
             daemon=True,
         )
         self._watchdog_thread.start()
+        first_packet_timeout = self._first_packet_timeout_sec
+        if any(
+            (flow.connection or {}).get("transport") == "d2xx"
+            or (flow.connection is None and flow.parameters.get("use_d2xx", False))
+            for flow in self._manifest.device_flows
+        ):
+            from Morelia.Watchdog.watchdog import NATIVE_READINESS_TIMEOUT_SEC
+
+            first_packet_timeout = max(first_packet_timeout, NATIVE_READINESS_TIMEOUT_SEC)
         startup_timeout = (
-            self._first_packet_timeout_sec
+            first_packet_timeout
             + self._report_interval_sec
             + self._stream_interval_sec * max(1, self._failure_threshold)
         )
@@ -1396,6 +1407,8 @@ class MoreliaRuntime:
             health = stream.get("health")
             recovery = stream.get("recovery")
             recovery = recovery if isinstance(recovery, dict) else {}
+            progress = recovery.get("progress") or {}
+            attempt = recovery.get("attempt") or {}
             failure = stream.get("failure")
             failure = failure if isinstance(failure, dict) else {}
             heartbeat = stream.get("heartbeat")
@@ -1426,9 +1439,9 @@ class MoreliaRuntime:
                     or heartbeat.get("reason")
                     or disconnect.get("reason")
                 ),
-                recovery_stage=recovery.get("status"),
+                recovery_stage=progress.get("stage") or recovery.get("status"),
                 policy_mode=recovery.get("policy"),
-                recovery_attempt=stream.get("consecutive_nonhealthy_ticks"),
+                recovery_attempt=attempt.get("current"),
                 failure_count=failure.get("count"),
                 failure_threshold=failure.get("threshold"),
                 error_message=failure.get("last_error"),
@@ -1449,14 +1462,17 @@ class MoreliaRuntime:
     def _watchdog_diagnostics(self, stream_reports: list[object]) -> dict[str, object]:
         """Project Morelia stream reports into a small operator-facing payload."""
         streams: list[dict[str, object]] = []
+        observed_at = time.monotonic()
         for index, device_id in enumerate(self._device_ids):
             raw = stream_reports[index] if index < len(stream_reports) else {}
             stream = raw if isinstance(raw, dict) else {}
             health = self._map_stream_status(stream.get("stream_health"))
             if health is StreamStatus.HEALTHY:
                 self._nonhealthy_streak_by_device[device_id] = 0
+                self._nonhealthy_since_by_device.pop(device_id, None)
             else:
                 self._nonhealthy_streak_by_device[device_id] += 1
+                self._nonhealthy_since_by_device.setdefault(device_id, observed_at)
 
             signals = stream.get("signals")
             signals = signals if isinstance(signals, dict) else {}
@@ -1549,6 +1565,9 @@ class MoreliaRuntime:
                     ),
                     "action": action_name,
                     "consecutive_nonhealthy_ticks": self._nonhealthy_streak_by_device[device_id],
+                    "nonhealthy_seconds": max(
+                        0.0, observed_at - self._nonhealthy_since_by_device.get(device_id, observed_at)
+                    ),
                     "failure": {
                         "count": failure.get("count"),
                         "threshold": failure.get("threshold"),
@@ -1578,12 +1597,11 @@ class MoreliaRuntime:
                         "remaining_sec": startup.get("remaining_sec"),
                     },
                     "recovery": {
+                        "progress": normalize_recovery_progress(stream.get("recovery_progress")),
                         "status": _bounded_text(recovery_event.get("status"), 80),
                         "policy": _bounded_text(recovery_event.get("recovery_policy"), 80),
                         "hardware_present": hardware_present,
-                        # The watcher's real restart budget as {"current", "max"}
-                        # — distinct from consecutive_nonhealthy_ticks above,
-                        # which measures elapsed time, not attempts.
+                        # Restart attempts are independent of report frequency.
                         "attempt": _attempt_counts(recovery_event.get("recovery_attempt")),
                     },
                 }

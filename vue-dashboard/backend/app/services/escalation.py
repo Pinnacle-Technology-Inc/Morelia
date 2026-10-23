@@ -50,10 +50,9 @@ back up. An incident is opened only when one of these holds:
      back — which would otherwise surface NOWHERE: never escalated, and never a
      gap either, because a gap needs a healed episode.
 
-Duration in (4) is derived, never stored. The watchdog publishes a per-device
-``consecutive_nonhealthy_ticks`` streak and its own ``report_interval_seconds``
-in the same diagnostics blob, so elapsed time is their product — no new wire
-field, no control-plane bookkeeping, and nothing to reconcile after a restart.
+Duration in (4) uses the runtime's elapsed ``nonhealthy_seconds`` so extra
+recovery progress reports cannot advance the escalation clock. Older reports
+fall back to ``consecutive_nonhealthy_ticks`` times ``report_interval_seconds``.
 
 Pure functions only: no DB, no Flask. Callers supply the report and the policy.
 """
@@ -61,6 +60,7 @@ Pure functions only: no DB, no Flask. Callers supply the report and the policy.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import math
 
 from app.domain.enums import PolicyMode, StreamStatus
 from app.runtime_child.driver import RuntimeReport, SinkHealth, SinkReport
@@ -136,11 +136,17 @@ def report_interval_seconds(report: RuntimeReport) -> float:
 def nonhealthy_seconds(
     diagnostic: Mapping[str, object], *, interval_seconds: float
 ) -> float | None:
-    """How long this device has been continuously non-healthy, in seconds.
+    """Use elapsed time so extra progress reports cannot accelerate escalation.
 
-    ``None`` when the streak is absent — an unknown duration must never satisfy
-    a "longer than" test.
+    Older runtimes fall back to their periodic report count.
     """
+    elapsed = diagnostic.get("nonhealthy_seconds")
+    if isinstance(elapsed, (int, float)) and not isinstance(elapsed, bool):
+        try:
+            if math.isfinite(elapsed) and elapsed >= 0:
+                return elapsed
+        except OverflowError:
+            pass
     ticks = diagnostic.get("consecutive_nonhealthy_ticks")
     if not isinstance(ticks, int) or isinstance(ticks, bool) or ticks < 0:
         return None

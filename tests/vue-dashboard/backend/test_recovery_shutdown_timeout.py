@@ -1,11 +1,13 @@
 from contextlib import contextmanager
 import importlib
 import json
+import threading
 from types import SimpleNamespace
 
 import pytest
 
 from Morelia.Watchdog.watchdog import StreamWatcher
+from app.runtime_child.morelia import MoreliaRuntime
 from app.services.session_status import _latest_report_device
 from .test_watchdog_lifecycle import FakeWorker, make_multi_stream_monitor
 
@@ -193,3 +195,250 @@ def test_dashboard_preserves_recovery_error_over_worker_fault(reason, present):
     assert row["recovery_state"] == "exhausted"
     assert row["allowed_recovery_actions"] == (["restart"] if present and reason == "port_release_timeout" else [])
     assert row["worker_fault"]["reason"] == "protocol_violation"
+
+
+@pytest.mark.parametrize("present,openable,restart_error,action", [
+    (False, True, None, "waiting_for_port"),
+    (True, False, None, "waiting_for_port_release"),
+    (True, True, "configuration invalid", "restart_failed"),
+    (True, True, None, "connection_restored"),
+])
+def test_reconnect_reports_observed_hardware_presence(present, openable, restart_error, action):
+    monitor = Monitor({"ok": True})
+    monitor.present = present
+    monitor.openable = openable
+    monitor.restart_error = restart_error
+    subject = watcher(monitor)
+
+    result = subject._try_reconnect()
+
+    assert result["action"] == action
+    assert result["hardware_present"] is present
+
+
+def test_reconnect_presence_error_stays_unknown_after_a_positive_check(monkeypatch):
+    monitor = Monitor({"ok": True})
+    monitor.openable = False
+    subject = watcher(monitor)
+    assert subject._try_reconnect()["hardware_present"] is True
+
+    def unavailable(_index):
+        raise RuntimeError("Native inventory contains unidentified interfaces")
+
+    monkeypatch.setattr(monitor, "is_stream_port_present", unavailable)
+    result = subject._try_reconnect()
+
+    assert result["action"] == "port_check_failed"
+    assert result["hardware_present"] is None
+    assert "unidentified interfaces" in result["error"]
+    assert monitor.restart_calls == 0
+
+
+@pytest.mark.parametrize("fresh_heartbeat", [False, True])
+def test_reconnect_presence_reaches_dashboard_through_heartbeat_grace(monkeypatch, fresh_heartbeat):
+    monitor = Monitor({"ok": True})
+    monitor.worker_status = "alive"
+    monkeypatch.setattr(monitor, "poll_stream_queue_roundtrip", lambda **_kwargs: {"ok": False})
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "missing", "packet_count": 0})
+    subject = StreamWatcher(
+        0, monitor, failure_threshold=3, max_heartbeat_age_sec=10,
+        interval_sec=1, timeout_sec=1, recovery_policy="automate",
+        max_auto_restart_attempts=1, publish=lambda *_args: None,
+    )
+    runtime = MoreliaRuntime(
+        manifest=SimpleNamespace(device_flows=[SimpleNamespace(device_id="pod", port="test")]),
+        on_report=lambda *_args: None,
+    )
+
+    for tick in range(3):
+        if tick == 2 and fresh_heartbeat:
+            monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "fresh", "packet_count": 1})
+        result = subject._try_reconnect()
+        assert result["hardware_present"] is True
+        report = subject._build_verbose_stream_report(0, result)
+        diagnostic = runtime._watchdog_diagnostics([report])["streams"][0]
+        row = _latest_report_device(
+            {"device_id": "pod", "stream_status": report["stream_health"]},
+            diagnostic, interval_seconds=1, session_policy="automate", controls_current=True,
+        )
+        assert row["hardware_present"] is True
+        if tick < 2:
+            assert result["action"] == "waiting_for_heartbeat"
+            assert row["recovery_state"] == "recovering"
+
+    assert result["action"] == ("connection_restored" if fresh_heartbeat else "needs_action")
+    assert monitor.restart_calls == 1
+    assert monitor.probe_calls == 1
+
+
+def test_recovery_progress_is_published_before_blocked_ping_and_retains_completion(monkeypatch):
+    monitor = Monitor({"ok": True, "teardown_confirmed": True})
+    reports = []
+    entered = threading.Event()
+    release = threading.Event()
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "missing", "packet_count": 0})
+    subject = watcher(monitor)
+    subject._publish = lambda _index, report: reports.append(report)
+
+    def check_stage(stage):
+        assert reports[-1]["recovery_progress"]["stage"] == stage
+
+    def stop(_index):
+        check_stage("stopping_stream")
+        return {"ok": True}
+
+    def present(_index):
+        check_stage("checking_presence")
+        return True
+
+    def openable(_index):
+        check_stage("checking_port")
+        return True
+
+    def restart(_index):
+        check_stage("restarting_stream")
+        monitor.worker_status = "alive"
+        return {"ok": True}
+
+    def ping(**_kwargs):
+        check_stage("waiting_for_ping")
+        entered.set()
+        assert release.wait(5)
+        return {"ok": True}
+
+    monkeypatch.setattr(monitor, "stop_stream", stop)
+    subject._stop_for_recovery({})
+    monkeypatch.setattr(monitor, "is_stream_port_present", present)
+    monkeypatch.setattr(monitor, "is_stream_port_openable", openable)
+    monkeypatch.setattr(monitor, "restart_one_stream", restart)
+    monkeypatch.setattr(monitor, "poll_stream_queue_roundtrip", ping)
+    result = []
+    thread = threading.Thread(target=lambda: result.append(subject._try_reconnect()))
+    thread.start()
+    try:
+        assert entered.wait(5)
+        progress = reports[-1]["recovery_progress"]
+        assert progress["stage"] == "waiting_for_ping"
+        assert progress["ping_status"] == "pending"
+        assert [step["stage"] for step in progress["history"]] == [
+            "detected", "stopping_stream", "checking_presence", "checking_port", "restarting_stream", "waiting_for_ping",
+        ]
+        assert all(report["recovery_event"]["status"] == "pending" for report in reports)
+    finally:
+        release.set()
+        thread.join(5)
+    assert not thread.is_alive()
+    completed = subject._build_verbose_stream_report(0, result[0])
+    assert completed["recovery_progress"]["stage"] == "recovery_verified"
+    assert completed["recovery_progress"]["verification"] == "ping"
+    assert completed["recovery_progress"]["ping_status"] == "passed"
+    assert "waiting for real samples" in completed["summary"]
+    assert progress["stage"] == "waiting_for_ping"
+
+    monkeypatch.setattr(monitor, "is_stream_port_present", lambda _index: True)
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "fresh", "packet_count": 1})
+    for _ in range(2):
+        healthy = subject._build_verbose_stream_report(0, subject._watch_stream())
+        assert healthy["recovery_progress"]["stage"] == "streaming"
+        assert healthy["recovery_progress"]["verification"] == "data"
+        assert healthy["recovery_progress"]["history"][-2]["stage"] == "recovery_verified"
+
+
+def test_progress_does_not_invent_recovery_during_initial_startup(monkeypatch):
+    monitor = Monitor({"ok": True})
+    monitor.worker_status = "alive"
+    subject = watcher(monitor)
+    for state, count in [("missing", 0), ("fresh", 1)]:
+        monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {
+            "state": state, "reason": "no_data_seen_yet" if not count else None,
+            "packet_count": count,
+        })
+        report = subject._build_verbose_stream_report(0, subject._watch_stream())
+        assert report["recovery_progress"] is None
+
+
+def test_progress_history_and_errors_are_bounded_and_new_episode_clears_error():
+    subject = watcher(Monitor({"ok": True}))
+    for _ in range(20):
+        subject._set_recovery_progress("checking_presence")
+        subject._set_recovery_progress("presence_check_failed", error="x" * 1000)
+    progress = subject._recovery_progress
+    assert len(progress["history"]) == 16
+    assert len(progress["last_error"]) == 500
+    subject._set_recovery_progress("streaming", verification="data", clear_error=True)
+    assert subject._recovery_progress["last_error"] is None
+    subject._set_recovery_progress("detected")
+    assert subject._recovery_progress["verification"] is None
+    assert [step["stage"] for step in subject._recovery_progress["history"]] == ["detected"]
+    subject._set_recovery_progress("presence_check_failed", error="inventory unavailable")
+    subject._set_recovery_progress("detected")
+    assert subject._recovery_progress["last_error"] is None
+
+
+def test_failed_ping_progress_preserves_error_until_data_verifies_recovery(monkeypatch):
+    monitor = Monitor({"ok": True})
+    monitor.worker_status = "alive"
+    subject = watcher(monitor)
+    monkeypatch.setattr(monitor, "poll_stream_queue_roundtrip", lambda **_kwargs: {
+        "ok": False, "error": "PING response timed out",
+    })
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "missing", "packet_count": 0})
+    waiting = subject._build_verbose_stream_report(0, subject._try_reconnect())
+    assert waiting["recovery_progress"]["stage"] == "waiting_for_data"
+    assert waiting["recovery_progress"]["ping_status"] == "failed"
+    assert waiting["recovery_progress"]["last_error"] == "PING response timed out"
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {"state": "fresh", "packet_count": 1})
+    restored = subject._build_verbose_stream_report(0, subject._try_reconnect())
+    progress = restored["recovery_progress"]
+    assert progress["stage"] == "streaming"
+    assert progress["verification"] == "data"
+    assert progress["ping_status"] == "failed"
+    assert progress["last_error"] is None
+    assert [step["stage"] for step in progress["history"]][-3:] == ["waiting_for_data", "recovery_verified", "streaming"]
+
+
+def test_new_failure_after_ping_success_clears_previous_verification(monkeypatch):
+    monitor = Monitor({"ok": True, "teardown_confirmed": True})
+    subject = watcher(monitor)
+    monkeypatch.setattr(monitor, "get_stream_heartbeat", lambda *_args: {
+        "state": "missing", "packet_count": 0,
+    })
+
+    def restart(_index):
+        monitor.worker_status = "alive"
+        return {"ok": True}
+
+    monkeypatch.setattr(monitor, "restart_one_stream", restart)
+    subject._watch_stream()
+    recovered = subject._build_verbose_stream_report(0, subject._watch_stream())
+    assert recovered["recovery_progress"]["verification"] == "ping"
+    assert recovered["recovery_progress"]["stage"] == "recovery_verified"
+
+    monitor.worker_status = "dead"
+    monkeypatch.setattr(monitor, "poll_stream_queue_roundtrip", lambda **_kwargs: {
+        "ok": False, "error": "PING response timed out",
+    })
+    stopped = subject._build_verbose_stream_report(0, subject._watch_stream())
+    assert stopped["recovery_progress"]["verification"] is None
+    assert stopped["recovery_progress"]["ping_status"] is None
+    waiting = subject._build_verbose_stream_report(0, subject._watch_stream())
+    assert waiting["recovery_progress"]["stage"] == "waiting_for_data"
+    assert waiting["recovery_progress"]["ping_status"] == "failed"
+    assert waiting["recovery_progress"]["verification"] is None
+
+
+def test_changed_progress_wakes_reporter_without_repeated_identical_ticks():
+    from Morelia.Watchdog.watchdog import Watchdog
+
+    subject = Watchdog.__new__(Watchdog)
+    subject._results_lock = threading.Lock()
+    subject._stream_results = {}
+    subject._urgent_report_event = threading.Event()
+    subject._on_stream_result = None
+    report = {"action": {"taken": "recovery_waiting_for_ping"},
+              "recovery_progress": {"stage": "waiting_for_ping"}}
+    subject._publish_stream(0, report)
+    assert subject._urgent_report_event.is_set()
+    subject._urgent_report_event.clear()
+    subject._publish_stream(0, dict(report))
+    assert not subject._urgent_report_event.is_set()

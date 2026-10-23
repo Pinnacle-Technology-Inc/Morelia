@@ -1,5 +1,9 @@
 """API coverage for the fleet overview (6f) and detail snapshot (6g)."""
 
+from types import SimpleNamespace
+
+import pytest
+
 from app.database import db
 from app.domain.enums import GapConfidence, SessionStatus
 from app.models.output_file import OutputFile
@@ -363,3 +367,88 @@ def test_status_snapshot_has_empty_sinks_when_none_reported(client, app):
 
     body = client.get("/api/v1/sessions/34/status").get_json()
     assert body["sinks"] == []
+
+
+def test_status_api_preserves_recovery_progress_and_failed_ping(client, app):
+    progress = {
+        "stage": "waiting_for_data", "started_at": 1792766263.0,
+        "ping_status": "failed", "verification": None,
+        "last_error": "Did not receive expected control response to command PING",
+        "history": [
+            {"stage": "restarting_stream", "at": 1792766257.0, "attempt": 1},
+            {"stage": "waiting_for_ping", "at": 1792766258.0, "attempt": 1},
+            {"stage": "waiting_for_data", "at": 1792766263.0, "attempt": 1},
+        ],
+    }
+    with app.app_context():
+        db.session.add(Session(id=35, name="progress", status=SessionStatus.ACTIVE, dataflow_id="df-35"))
+        db.session.commit()
+        BackendEventRepository().append(
+            event_type="runtime.report", session_id=35, dataflow_id="df-35", sequence=1,
+            phase="running", comms="current",
+            payload={
+                "devices": [{"device_id": "dev-a", "stream_status": "suspect"}],
+                "diagnostics": {"streams": [{
+                    "device_id": "dev-a", "action": "waiting_for_heartbeat",
+                    "recovery": {"status": "pending", "policy": "automate",
+                                 "hardware_present": True, "progress": progress,
+                                 "attempt": {"current": 1, "max": 3}},
+                }]},
+            },
+        )
+    response = client.get("/api/v1/sessions/35/status")
+    assert response.status_code == 200
+    device = response.get_json()["latest_report"]["devices"][0]
+    assert device["recovery_progress"] == progress
+    assert device["hardware_present"] is True
+    assert device["recovery_state"] == "recovering"
+    assert device["recovery_attempt"] == 1
+    assert device["recovery_attempt_max"] == 3
+
+
+def test_progress_reports_use_elapsed_time_instead_of_report_count(monkeypatch):
+    from app.runtime_child import morelia
+    from app.services.escalation import nonhealthy_seconds
+
+    runtime = morelia.MoreliaRuntime(
+        manifest=SimpleNamespace(device_flows=[SimpleNamespace(device_id="pod", port="test")]),
+        on_report=lambda *_args: None,
+    )
+    report = {"stream_health": "suspect", "action": {"taken": "recovery_wait_ping"},
+              "recovery_progress": {"stage": "waiting_for_ping", "ping_status": "pending"}}
+    now = [100.0]
+    monkeypatch.setattr(morelia.time, "monotonic", lambda: now[0])
+    for _ in range(50):
+        diagnostic = runtime._watchdog_diagnostics([report])["streams"][0]
+    assert diagnostic["recovery"]["progress"]["stage"] == "waiting_for_ping"
+    assert nonhealthy_seconds(diagnostic, interval_seconds=3) == 0
+    now[0] += 2
+    diagnostic = runtime._watchdog_diagnostics([report])["streams"][0]
+    assert nonhealthy_seconds(diagnostic, interval_seconds=3) == 2
+    runtime._watchdog_diagnostics([{"stream_health": "healthy"}])
+    now[0] += 5
+    diagnostic = runtime._watchdog_diagnostics([report])["streams"][0]
+    assert nonhealthy_seconds(diagnostic, interval_seconds=3) == 0
+
+
+@pytest.mark.parametrize("invalid", [None, [], "waiting_for_ping", {}, {"stage": 7}])
+def test_missing_progress_does_not_invent_recovery(invalid):
+    from app.domain.recovery_progress import normalize_recovery_progress
+
+    assert normalize_recovery_progress(invalid) is None
+
+
+def test_progress_payload_bounds_history_errors_and_invalid_evidence():
+    from app.domain.recovery_progress import normalize_recovery_progress
+
+    progress = normalize_recovery_progress({
+        "stage": "waiting_for_ping", "started_at": float("nan"),
+        "last_error": "x" * 1000, "ping_status": "made_up", "verification": True,
+        "history": [{"stage": "waiting_for_ping", "at": n, "attempt": 1} for n in range(30)],
+    })
+    assert len(progress["history"]) == 16
+    assert progress["history"][0]["at"] == 14
+    assert len(progress["last_error"]) == 500
+    assert progress["started_at"] is None
+    assert progress["ping_status"] is None
+    assert progress["verification"] is None
